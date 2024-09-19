@@ -1,0 +1,8 @@
+# SO Shell - Proyecto de Sistemas Operativos
+
+Este repositorio contiene el desarrollo de una **shell** personalizada para la asignatura de **Sistemas Operativos**. El proyecto será construido de manera incremental, con nuevas funcionalidades añadidas en cada entrega de laboratorio.
+
+
+## Descripción General
+
+El objetivo de este proyecto es implementar una shell básica en lenguaje C que simule el comportamiento de un intérprete de comandos de un sistema operativo. A lo largo de los laboratorios, la shell irá creciendo en funcionalidad.
