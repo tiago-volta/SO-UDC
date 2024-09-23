@@ -1,7 +1,3 @@
-//
-// Created by pablojhd on 22/09/24.
-//
-
 #include "CommandList.h"
 
 

@@ -1,8 +1,3 @@
-//
-// Created by pablojhd on 16/09/24.
-//
-
-
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
@@ -23,18 +18,15 @@
 #include "CommandList.h"
 
 #define LENGTH_MAX 1024
-
-void Cmd_open (char * tr[]);
-
-void Cmd_close (char *tr[]);
-
-void Cmd_dup (char * tr[]);
+#define MAXNAME 256
+#define MAXFILES 100
 
 void imprimirPromt();
 
 void leerEntrada(bool *terminado, CommandList *commands, HistoryList *history);
 void procesarEntrada(const char *cadena,const char trozos[LENGTH_MAX],int NumTrozos,CommandList *lista,HistoryList *history);
 int TrocearCadena(char * cadena, char * trozos[]);
+
 
 void AddToCommandList(char *command[],HistoryList *lista);
 
@@ -55,4 +47,4 @@ void command_exit(char * tr[]);
 
 
 
-#endif //FUNCIONES_H
+#endif

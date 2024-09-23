@@ -1,7 +1,3 @@
-//
-// Created by pablojhd on 22/09/24.
-//
-
 #ifndef COMMANDLIST_H
 #define COMMANDLIST_H
 #include "functions.h"
