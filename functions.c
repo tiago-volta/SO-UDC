@@ -1,10 +1,13 @@
 #include "functions.h"
 
-//Cada funcion es un comando que se puede ejecutar en el shell
+//Cada función es un comando que se puede ejecutar en el shell
+
+//Muestra el prompt para que el usuario sepa que puede ingresar un comando
 void printPrompt(){
     printf("→ ");
 }
 
+//Divide la cadena de entrada en "piezas" utilizando espacios, saltos de línea y tabulaciones como delimitadores
 int SplitString(char *str, char *pieces[]) {
     int i = 1;
     if ((pieces[0] = strtok(str, " \n\t")) == NULL)
@@ -14,18 +17,19 @@ int SplitString(char *str, char *pieces[]) {
     return i;
 }
 
+//Procesa la entrada del usuario, comparando el comando con la lista de comandos disponibles y ejecutando la función correspondiente
 void processInput(const char *str, const char *pieces[], int numPieces, CommandList *commandList, HistoryList *history) {
     for (int i = 0; i < commandList->total; i++) {
         if (strcmp(commandList->commands[i].name, pieces[0]) == 0) {
-            AddToHistoryList(str, history);
-            commandList->commands[i].func(pieces);
+            AddToHistoryList(str, history);  // Añade el comando al historial
+            commandList->commands[i].func(pieces);  // Ejecuta el comando correspondiente
             return;
         }
     }
     perror("Comando inválido, escriba \"help\" para ver los comandos disponibles");
 }
 
-//Función que lee la entrada del usuario
+//Función que lee la entrada del usuario desde el terminal y la procesa para ejecutar el comando introducido
 void readInput(bool *finished, CommandList *commands, HistoryList *history) {
     char input[LENGTH_MAX];
     if (fgets(input, sizeof(input), stdin) != NULL) {
@@ -35,45 +39,66 @@ void readInput(bool *finished, CommandList *commands, HistoryList *history) {
         int numPieces = SplitString(input, pieces);
         if (numPieces > 0) {
             printf("Primera pieza es: %s\n", pieces[0]);
-            printf("Segunda pieza es: %s\n", pieces[1]);
-            printf("Tercera pieza es: %s\n", pieces[2]);
-            printf("Tamaño %lu\n", sizeof(input));
-            printf("numPieces = %d\n", numPieces);
-            processInput(str, pieces, numPieces, commands, history);
+            processInput(str, pieces, numPieces, commands, history);  // Procesa la entrada del usuario
         }
     } else {
-        perror("Error reading input");
+        perror("Error leyendo la entrada");
     }
 }
 
-void AddToHistoryList(char *command,HistoryList *lista){
+//Añade un comando introducido a la lista de comandos ejecutados (historial)
+void AddToCommandList(char *command[], HistoryList *lista){
     Item newItem;
-    insertCommand(newItem,LNULL,lista);
+    insertCommand(newItem, LNULL, lista);  // Inserta el comando en la lista de comandos
 }
 
-/*authors Prints the names and logins of the program authors. authors -l prints
-only the logins and authors -n prints only the names*/
+//Añade un comando introducido al historial
+void AddToHistoryList(char *command, HistoryList *lista){
+    Item newItem;
+    insertCommand(newItem, LNULL, lista);  // Inserta el comando en el historial
+}
+
+//Muestra los nombres o los logins de los autores dependiendo de los argumentos proporcionados
 void command_authors(const char * str) {
     const char * names[] = {"Pablo Herrero","Tiago Volta"};
     const char * logins[] = {"pablo.herrero.diaz","tiago.velosoevolta"};
     int NumAuthors = 2;
     if (strcmp(&str[1],"-l")==0 || &str[1] == NULL) {
         printf("Logins de los autores: \n");
-        for(int i=0; i<NumAuthors; i++) {
-            printf("%s\n",logins[i]);
+        for(int i = 0; i < NumAuthors; i++) {
+            printf("%s\n", logins[i]);
         }
-    }else if(strcmp(&str[1],"-n")==0 || &str[1] == NULL) {
+    } else if(strcmp(&str[1],"-n")==0 || &str[1] == NULL) {
         printf("Nombres de los autores: \n");
-        for(int i=0; i<NumAuthors; i++) {
-            printf("%s\n",names[i]);
+        for(int i = 0; i < NumAuthors; i++) {
+            printf("%s\n", names[i]);
         }
     }
 }
 
+//Muestra el PID del proceso actual
+void command_pid(char *str[]) {
+    printf("PID: %d\n", getpid());
+}
 
+//Muestra el PPID del proceso padre
+void command_ppid(char *str[]) {
+    printf("PPID: %d\n", getppid());
+}
 
-void command_historic (char trozos[LENGTH_MAX], int NumTrozos) {
-    
+//Comando que cambia el directorio de trabajo
+void command_cd(char * tr[]) {
+    // Implementación futura
+}
+
+//Muestra la fecha y hora actuales
+void command_date(char * tr[]) {
+    // Implementación futura
+}
+
+//Comando que muestra el historial de comandos introducidos
+void command_historic (char trozos[LENGTH_MAX]) {
+    // Implementación futura
 }
 
 //Función que abre un fichero a partir de su descriptor
@@ -82,7 +107,7 @@ void command_open(char *pieces[]) {
 
     // Si no se especificó un archivo, listar los archivos abiertos
     if (pieces[0] == NULL) {
-        ListOpenFiles();
+        ListOpenFiles();  // Lista los archivos abiertos
         return;
     }
 
@@ -102,7 +127,7 @@ void command_open(char *pieces[]) {
     if ((df = open(pieces[0], mode, 0777)) == -1) {
         perror("Imposible abrir fichero");
     } else {
-        AddToOpenFiles(df, mode, pieces[0]);
+        AddToOpenFiles(df, mode, pieces[0]);  // Añade el archivo a la lista de archivos abiertos
         printf("Añadida entrada a la tabla ficheros abiertos: descriptor %d, archivo %s, modo %d\n", df, pieces[0], mode);
     }
 }
@@ -113,7 +138,7 @@ void command_close(char *pieces[]) {
 
     // Si no se especifica un descriptor o el descriptor es menor que 0, listar los archivos abiertos
     if (pieces[0] == NULL || (df = atoi(pieces[0])) < 0) {
-        ListOpenFiles();
+        ListOpenFiles();  // Lista los archivos abiertos
         return;
     }
 
@@ -121,18 +146,18 @@ void command_close(char *pieces[]) {
     if (close(df) == -1) {
         perror("Imposible cerrar descriptor");
     } else {
-        RemoveFromOpenFiles(df);
+        RemoveFromOpenFiles(df);  // Elimina el archivo de la lista de archivos abiertos
     }
 }
 
-// Función que duplica un descriptor de archivo
+//Función que duplica un descriptor de archivo
 void command_dup(char *pieces[]) {
     int df, duplicated;
     char aux[MAXNAME], *p;
 
     // Si no hay un descriptor válido, lista los archivos abiertos
     if (pieces[0] == NULL || (df = atoi(pieces[0])) < 0) {
-        ListOpenFiles();
+        ListOpenFiles();  // Lista los archivos abiertos
         return;
     }
 
@@ -152,3 +177,17 @@ void command_dup(char *pieces[]) {
     AddToOpenFiles(duplicated, fcntl(duplicated, F_GETFL), aux);
 }
 
+//Comando que muestra información del sistema
+void command_infosys(char * tr[]) {
+    // Implementación futura
+}
+
+//Comando que muestra los comandos disponibles
+void command_help(char * tr[]) {
+    // Implementación futura
+}
+
+//Comando para salir del shell
+void command_exit(char * tr[]) {
+    // Implementación futura
+}
