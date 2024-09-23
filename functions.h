@@ -21,11 +21,12 @@
 #define MAXNAME 256
 #define MAXFILES 100
 
-void imprimirPromt();
+void printPrompt();
 
-void leerEntrada(bool *terminado, CommandList *commands, HistoryList *history);
-void procesarEntrada(const char *cadena,const char trozos[LENGTH_MAX],int NumTrozos,CommandList *lista,HistoryList *history);
-int TrocearCadena(char * cadena, char * trozos[]);
+void readInput(bool *finished, CommandList *commands, HistoryList *history);
+
+void processInput(const char *str, char *pieces[], int numPieces, CommandList *commands, HistoryList *history);
+int SplitString(const char *str, char *pieces[]);
 
 
 void AddToCommandList(char *command[],HistoryList *lista);
