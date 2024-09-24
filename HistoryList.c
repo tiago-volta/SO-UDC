@@ -1,6 +1,10 @@
-#include "HistoryList.h"
+//Manejo del historial de comandos
 
+#include "HistoryList.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include "functions.h"
 
 
 //Esta funcion crea una lista vacía y ademas la inicializa
@@ -54,8 +58,8 @@ void printList(HistoryList L) {
 void repeatCommand(Pos p, HistoryList L) {
     char *trozos[LENGTH_MAX];
     Item *comando = getItem(p, L);
-    int NumTrozos =TrocearCadena(*comando,trozos);
-    procesarEntrada(trozos, NumTrozos);
+    int NumTrozos = SplitString(*comando,trozos);
+    processInput(trozos, NumTrozos);
 }
 
 void printLastN (HistoryList L, int n) {

@@ -1,5 +1,8 @@
+//Manejo de la lista de ficheros abiertos
+
 #include "CMDlist.h"
 #include <stdio.h>
+#include <string.h>
 
 OpenFile openFiles[MAXFILES];
 int numOpenFiles = 0;
