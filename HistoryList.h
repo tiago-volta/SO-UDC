@@ -1,3 +1,7 @@
+//
+// Created by pablojhd on 22/09/24.
+//
+
 #ifndef HISTORYLIST_H
 #define HISTORYLIST_H
 
@@ -9,8 +13,10 @@
 #define MAX 4096  //Tamaño máximo del array en la implementación estática
 #define LNULL (-1) //Constante para indicar la posición nula o lista vacia
 
+#include "functions.h"
+
 typedef int Pos;
-typedef char Item[1024];
+typedef char Item[LENGTH_MAX];
 
 typedef struct{
     Item data [MAX];
@@ -24,14 +30,12 @@ typedef struct{
  * POSCONDICIÓN: la lista sin datos queda inicializada
  */
 void createEmptyList(HistoryList *L);
-
 /*
  * OBJETIVO: determinar si la lista está vacía
  * ENTRADAS: una lista
  * SALIDAS: verdadero si la lista está vacía, falso si no lo está
  */
 bool isEmptyList(HistoryList L);
-
 /*
  * OBJETIVO: conocer la posición del primer elemento de la lista
  * ENTRADAS: una lista
@@ -39,6 +43,7 @@ bool isEmptyList(HistoryList L);
  * PRECONDICIÓN: la lista inicializada y no vacía
  */
 Pos first(HistoryList L);
+
 
 /*
  * OBJETIVO: insertar un elemento en la lista antes de la posicion indicada
@@ -61,34 +66,20 @@ bool insertCommand(Item *d, Pos p, HistoryList *L);
  * PRECONDICIÓN: la lista inicializada, no vacía y que la posición introducida sea válida en la lista
  */
 Item *getItem(Pos p, HistoryList L);
-
 /*
- * OBJETIVO: imprimir todos los elementos de la lista
+ * OBJETIVO: modificar el contenido de un elemento de la lista
  * ENTRADAS:
+ *  d: el nuevo contenido a asignar
+ *  p: la posición del elemento a modificar
  *  L: la lista
- * SALIDAS: la lista impresa en la consola
- * PRECONDICIÓN: la lista inicializada
- */
-void printList(HistoryList L);
-
-/*
- * OBJETIVO: repetir un comando de la lista
- * ENTRADAS:
- *  p: la posición del comando a repetir
- *  L: la lista
- * SALIDAS: el comando repetido
+ * SALIDAS: la lista modificada, con el nuevo elemento
  * PRECONDICIÓN: la lista inicializada, no vacía y que la posición introducida sea válida en la lista
  */
+
+void printList(HistoryList L);
+
 void repeatCommand(Pos p, HistoryList L);
 
-/*
- * OBJETIVO: imprimir los últimos n comandos de la lista
- * ENTRADAS:
- *  L: la lista
- *  n: el número de comandos a imprimir
- * SALIDAS: los últimos n comandos impresos
- * PRECONDICIÓN: la lista inicializada y no vacía
- */
 void printLastN (HistoryList L, int n);
 
 #endif //HISTORYLIST_H

@@ -1,3 +1,8 @@
+//
+// Created by pablojhd on 16/09/24.
+//
+
+
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
@@ -23,30 +28,27 @@
 #define MAXFILES 100
 
 void printPrompt();
-
-void readInput(bool *finished, CommandList *commands, HistoryList *history);
-
-void processInput(const char *str, char *trozos[], int numtrozos, CommandList *commands, HistoryList *history);
-int SplitString(const char *str, char *trozos[]);
-
+void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
+void processInput(const char *str,const char *pieces[LENGTH_MAX], int numPieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+int SplitString(char *str, char *pieces[]);
 
 void AddToCommandList(char *command[],HistoryList *lista);
 
-void AddToHistoryList(char *command,HistoryList *lista);
+void AddToHistoryList(const char *command,HistoryList *lista);
 
-void command_authors(char * str[]) ;
-void command_pid(char * str[]);
-void command_ppid(char * str[]);
-void command_cd(char * tr[]);
-void command_date(char * tr[]);
-void command_historic (char trozos[LENGTH_MAX]);
-void command_open(char * tr[]);
-void command_close(char * tr[]);
-void command_dup(char * tr[]);
-void command_infosys(char * tr[]);
-void command_help(char * tr[]);
-void command_exit(char * tr[]);
+void command_authors(char * str) ;
+void command_pid(char * str);
+void command_ppid(char * str);
+void command_cd(char * str);
+void command_date(char * str);
+void command_historic (const char *str,HistoryList *lista);
+void command_open(char * str);
+void command_close(char * str);
+void command_dup(char * str);
+void command_infosys(char * str);
+void command_help(char * str);
+void command_exit(char * str);
 
 
 
-#endif
+#endif //FUNCIONES_H

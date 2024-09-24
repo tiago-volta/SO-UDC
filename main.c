@@ -4,14 +4,16 @@
 #include "CommandList.h"
 
 int main(void) {
-    bool terminado = false; // Inicializar la variable
+    bool finished = false; // Inicializar la variable
     HistoryList History;
     CommandList ListaComandos;
+    OpenFileList OpenFileList;
     createEmptyList(&History);
     initializeCommandList(&ListaComandos);
-    while (!terminado) {
-        imprimirPromt();
-        leerEntrada(&terminado,&ListaComandos,&History);// Aquí podrías agregar lógica para cambiar `terminado` según sea necesario
+    InitializeOpenFileList(&OpenFileList);
+    while (!finished) {
+        printPrompt();
+        readInput(&finished,&ListaComandos,&History,&OpenFileList);// Aquí podrías agregar lógica para cambiar `terminado` según sea necesario
     }
     return 0;
 }

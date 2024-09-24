@@ -1,10 +1,15 @@
+//
+// Created by pablojhd on 22/09/24.
+//
+
 #ifndef COMMANDLIST_H
 #define COMMANDLIST_H
 #include "functions.h"
 
 typedef struct {
-    char name[1024];
-    void (*func)(char*[]);
+    char name[LENGTH_MAX];
+    char description[LENGTH_MAX];
+    void (*func)(char*[],void *);
 }Command;
 
 typedef struct {
@@ -13,8 +18,7 @@ typedef struct {
 }CommandList;
 
 void initializeCommandList(CommandList *list);
-
-
+void printCommandList(CommandList list);
 
 
 

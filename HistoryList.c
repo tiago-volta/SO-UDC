@@ -1,10 +1,10 @@
-//Manejo del historial de comandos
+//
+// Created by pablojhd on 22/09/24.
+//
 
 #include "HistoryList.h"
+
 #include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include "functions.h"
 
 
 //Esta funcion crea una lista vacía y ademas la inicializa
@@ -49,7 +49,7 @@ bool insertCommand(Item *d, Pos p, HistoryList *L) {      //Se pasa la lista por
 //Funciones del comando
 
 void printList(HistoryList L) {
-    printf("Comands List: \n");
+    printf("History List: \n");
     for (int i = 0; i <= L.lastPos; i++) {
         printf("%d: %s\n", i,L.data[i]);
     }
