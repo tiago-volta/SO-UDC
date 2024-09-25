@@ -1,11 +1,7 @@
-//
-// Created by pablojhd on 22/09/24.
-//
+//Inicializa la lista de comandos disponibles
 
 #include "CommandList.h"
 
-
-// Función auxiliar para inicializar la lista con comandos predefinidos
 void initializeCommandList(CommandList *list) {
     // Lista predefinida de comandos
     Command ComandosPredefinidos[] = {
@@ -35,3 +31,10 @@ void printCommandList(CommandList list) {
         printf("%s: %s\n",list.commands[i].name,list.commands[i].description);
     }
 }
+
+void freeDynamicMemory(void *dynamicMemoryPointer) {
+    free(dynamicMemoryPointer);
+}
+
+
+

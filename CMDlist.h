@@ -1,9 +1,12 @@
-#include <fcntl.h>
-
 #ifndef CMDLIST_H
 #define CMDLIST_H
-#include "functions.h"
 
+#include "functions.h"
+#include <fcntl.h>
+#include <string.h>
+
+#define MAXFILES 100
+#define MAXNAME 256
 
 //Estructura para almacenar los ficheros abiertos
 typedef struct{
@@ -24,8 +27,5 @@ char* GetFileNameByDescriptor(OpenFileList *list, int df);
 void ListOpenFiles(OpenFileList *list);
 void AddToOpenFiles(OpenFileList *list, int df, int mode, char *name);
 void RemoveFromOpenFiles(OpenFileList *list, int df);
-
-
-
 
 #endif //CMDLIST_H

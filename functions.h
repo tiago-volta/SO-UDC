@@ -1,8 +1,3 @@
-//
-// Created by pablojhd on 16/09/24.
-//
-
-
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
@@ -18,6 +13,7 @@
 #include <stdbool.h>
 #include <sys/types.h> // Para definir tipos de datos como mode_t
 #include <sys/stat.h>  // Para definir permisos de archivo
+#include <sys/utsname.h> // Para obtener información del sistema
 #include <unistd.h>  // Para close()
 #include "HistoryList.h"
 #include "CMDlist.h"
@@ -29,8 +25,9 @@
 
 void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
-void processInput(const char *str,const char *pieces[LENGTH_MAX], int numPieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
-int SplitString(char *str, char *pieces[]);
+void processInput(const char *str,const char *trozos[LENGTH_MAX], int numtrozos, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+int SplitString(char *str, char *trozos[]);
+
 
 void AddToCommandList(char *command[],HistoryList *lista);
 
@@ -51,4 +48,4 @@ void command_exit(char * str);
 
 
 
-#endif //FUNCIONES_H
+#endif

@@ -1,10 +1,8 @@
-//
-// Created by pablojhd on 22/09/24.
-//
-
 #ifndef COMMANDLIST_H
 #define COMMANDLIST_H
+
 #include "functions.h"
+
 
 typedef struct {
     char name[LENGTH_MAX];
@@ -19,7 +17,6 @@ typedef struct {
 
 void initializeCommandList(CommandList *list);
 void printCommandList(CommandList list);
-
-
+void freeDynamicMemory(void *dynamicMemoryPointer);
 
 #endif //COMMANDLIST_H

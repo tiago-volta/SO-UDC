@@ -1,13 +1,8 @@
-//
-// Created by pablojhd on 16/09/24.
-//
-
-#include "CMDlist.h"
-
-#include <stdio.h>
+//Manejo de la lista de ficheros abiertos
 
 #include "CMDlist.h"
 #include <stdio.h>
+#include <string.h>
 
 // Función para inicializar la lista de ficheros abiertos
 void InitializeOpenFileList(OpenFileList *list) {
@@ -19,8 +14,6 @@ void InitializeOpenFileList(OpenFileList *list) {
         memset(list->files[i].name, 0, sizeof(list->files[i].name));  // Limpiar nombre
     }
 }
-
-
 
 // Función para listar los ficheros abiertos
 void ListOpenFiles(OpenFileList *list) {
@@ -67,5 +60,6 @@ char* GetFileNameByDescriptor(OpenFileList *list, int df) {
     }
     return NULL;
 }
+
 
 //Añadir ficheros abiertos al historial va a devolver un int que sera el numero actual de ficheros abiertos que lleva
