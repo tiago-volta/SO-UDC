@@ -4,12 +4,16 @@
 
 #ifndef COMMANDLIST_H
 #define COMMANDLIST_H
-#include "functions.h"
+
+#include <stdio.h>
+
+#define LENGTH_MAX 1024
+#define MAX 4096
 
 typedef struct {
     char name[LENGTH_MAX];
     char description[LENGTH_MAX];
-    void *func;
+    void (*func)(void *, void *, void *, void *);
     int numArgs;
 }Command;
 
@@ -18,10 +22,7 @@ typedef struct {
     int total;
 }CommandList;
 
-void initializeCommandList(CommandList *list);
 void printCommandList(CommandList list);
-void clearHistoryList(HistoryList *L);
-
 
 
 #endif //COMMANDLIST_H
