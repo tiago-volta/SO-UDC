@@ -1,11 +1,5 @@
-//
-// Created by pablojhd on 16/09/24.
-//
-
-
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,19 +14,20 @@
 #include <sys/stat.h>  // Para definir permisos de archivo
 #include <sys/utsname.h> // Para obtener información del sistema
 #include <unistd.h>  // Para close()
+#include "CommandList.h"
 #include "HistoryList.h"
 #include "CMDlist.h"
-#include "CommandList.h"
-
 
 #define LENGTH_MAX 1024
 #define MAXNAME 256
 #define MAXFILES 100
+#define MAX 4096
+#define LNULL (-1)
 
 void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
-void processInput(const char *str,const char *pieces[LENGTH_MAX], int numPieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
-int SplitString(char *str, char *pieces[]);
+void processInput(const char *str,const char *trozos[LENGTH_MAX], int numtrozos, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+int SplitString(char *str, char *trozos[]);
 
 void AddToCommandList(char *command[],HistoryList *lista);
 
@@ -44,13 +39,14 @@ void command_ppid();
 void command_cd(char * str);
 void command_date(char * str);
 void command_historic (const char *str,HistoryList *lista);
-void command_open(char * str);
-void command_close(char * str);
-void command_dup(char * str);
+void command_open(char *trozos[],OpenFileList *openFileList);
+void command_close(char *trozos[], OpenFileList *openFileList);
+void command_dup(char *trozos[], OpenFileList *openFileList);
 void command_infosys();
-void command_help(char * str);
+void command_help(char * trozos[],CommandList *commandList);
 void command_exit(CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
 
 
 
-#endif //FUNCIONES_H
+
+#endif

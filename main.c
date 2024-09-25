@@ -13,21 +13,23 @@
 #include "CMDlist.h"
 #include "CommandList.h"
 
-#define MAXNAME 256
-#define MAXFILES 100
-
 
 int main(void) {
-    bool finished = false; // Inicializar la variable
+    bool finished = false; //Inicializar la variable que controlará el bucle principal
     HistoryList History;
     CommandList ListaComandos;
     OpenFileList OpenFileList;
-    createEmptyList(&History);
-    initializeCommandList(&ListaComandos);
-    InitializeOpenFileList(&OpenFileList);
+
+    //Inicialización de las estructuras de datos
+    createEmptyList(&History);              //Inicializa la lista de historial de comandos
+    initializeCommandList(&ListaComandos);  //Inicializa la lista de comandos disponibles
+    InitializeOpenFileList(&OpenFileList);  //Inicializa la lista de archivos abiertos
+
+    //Bucle principal del shell
     while (!finished) {
-        printPrompt();
-        readInput(&finished,&ListaComandos,&History,&OpenFileList); //Aquí podrías agregar lógica para cambiar `terminado` según sea necesario
+        printPrompt();  //Muestra el prompt al usuario
+        readInput(&finished, &ListaComandos, &History, &OpenFileList);  //Lee y procesa la entrada del usuario
     }
+
     return 0;
 }
