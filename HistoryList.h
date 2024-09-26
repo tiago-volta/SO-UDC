@@ -75,8 +75,6 @@ Item *getItem(Pos p, HistoryList L);
 
 void printList(HistoryList L);
 
-void repeatCommand(Pos p, HistoryList L);
-
 void printLastN (HistoryList L, int n);
 
 void clearHistoryList(HistoryList *L);

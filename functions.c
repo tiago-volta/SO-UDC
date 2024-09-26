@@ -22,23 +22,25 @@ int SplitString(char *str, char *pieces[]){
     return i;
 }
 
+
+
 // Función auxiliar para inicializar la lista con comandos predefinidos
 void PredefinedCommands(CommandList *commandList) {
     Command ComandosPredefinidos[] = {
-        { "authors","Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names.",   command_authors,1 },
-        { "pid","Prints the pid of the process executing the shell.",   command_pid,0 },
-        { "ppid","Prints the pid of the shell’s parent process.",   command_ppid,0 },
-        { "cd","Changes the current working directory of the shell to dir. When invoked without auguments it prints thecurrent working directory",   command_cd,1 },
-        { "date","Prints the current date and the current time. date -d Prints only the current date. date -t Prints only the current time ",   command_date,1 },
-        { "historic","Shows the historic of commands executed by this shell. historic Prints all the comands that have been input with their order number. historic N Repeats command number N. historic -N Prints only the lastN comands ",   command_historic,2 },
-        { "open","open without arguments lists the shell open files. open file, Opens a file and adds it to the list of shell open files",   command_open,2 },
-        { "close","Closes the df file descriptor and eliminates the corresponding item from the list", command_close,2 },
-        { "dup","Duplicates the df file descriptor creating the corresponding new entry on the file list", command_dup,2 },
-        { "infosys","Prints information on the machine running the shell", command_infosys,0 },
-        { "help","help displays a list of available commands. help cmd gives a brief help on the usage of comand cmd", command_help,2 },
-        { "quit", "Ends the shell",command_exit,3 },
-        { "exit", "Ends the shell",command_exit,3 },
-        { "bye", "Ends the shell",command_exit,3 }
+        { "authors","Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names.",  0},
+        { "pid","Prints the pid of the process executing the shell.",  1 },
+        { "ppid","Prints the pid of the shell’s parent process.",   2 },
+        { "cd","Changes the current working directory of the shell to dir. When invoked without auguments it prints thecurrent working directory",   3 },
+        { "date","Prints the current date and the current time. date -d Prints only the current date. date -t Prints only the current time ",   4 },
+        { "historic","Shows the historic of commands executed by this shell. historic Prints all the comands that have been input with their order number. historic N Repeats command number N. historic -N Prints only the lastN comands ",   5 },
+        { "open","open without arguments lists the shell open files. open file, Opens a file and adds it to the list of shell open files",   6 },
+        { "close","Closes the df file descriptor and eliminates the corresponding item from the list", 7 },
+        { "dup","Duplicates the df file descriptor creating the corresponding new entry on the file list", 8 },
+        { "infosys","Prints information on the machine running the shell", 9 },
+        { "help","help displays a list of available commands. help cmd gives a brief help on the usage of comand cmd", 10 },
+        { "quit", "Ends the shell",11 },
+        { "exit", "Ends the shell",12 },
+        { "bye", "Ends the shell",13 }
     };
     commandList->total = sizeof(ComandosPredefinidos) / sizeof(Command);
     for (int i = 0; i < commandList->total; i++)
@@ -59,7 +61,7 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
             printf("Tercer trozo es: %s\n",trozos[2]);
             printf("Size %lu\n",sizeof(input));
             printf("NumTrozos=%d\n",NumTrozos);
-            processInput(finished,cadena,trozos,NumTrozos,commandList,history,openFileList);
+            processInput(finished,cadena,trozos,commandList,history,openFileList);
         }
     }else
         perror ("Error al leer la entrada");
@@ -83,27 +85,57 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
     }
 }*/
 
-void processInput(bool *finished,const char *str,const char *pieces, int numPieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+int getCmdIdAndHistory (const char *str,const char *pieces,CommandList *commandList,HistoryList *history) {
     for (int i=0; i<commandList->total ;i++) {
         if(strcmp(commandList->commands[i].name,&pieces[0]) == 0){
             AddToHistoryList(str,history);                  //Se guarda en el historial
-            if (commandList->commands[i].numArgs == 0) {
-                commandList->commands[i].func(NULL,NULL,NULL,NULL);
-            }else if (commandList->commands[i].numArgs == 1) {
-                commandList->commands[i].func(&pieces,NULL,NULL,NULL);
-            }else if (commandList->commands[i].numArgs == 2) {
-                if (strcmp(&pieces[0], "historic") == 0 ) {
-                    commandList->commands[i].func(&pieces, history,NULL,NULL);
-                } else if (strcmp(&pieces[0], "help") == 0 ) {
-                    commandList->commands[i].func(&pieces, commandList,NULL,NULL);
-                }else {
-                    commandList->commands[i].func(&pieces, openFileList,NULL,NULL);
-                }
-            }else {
-                commandList->commands[i].func(finished,commandList,history,openFileList);
-            }
-        }else
-            perror("Comando no válido, introduce ""help"" para ver los disponibles");
+            return commandList->commands[i].ID;
+        }
+    }
+    perror("Comando no válido, introduce ""help"" para ver los disponibles");
+    return -1;
+}
+
+void processInput(bool *finished,const char *str,const char *pieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+    switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
+        case 0:
+            command_authors(&pieces);
+            break;
+        case 1:
+            command_pid();
+            break;
+        case 2:
+            command_ppid();
+            break;
+        case 3:
+            command_cd(&pieces);
+            break;
+        case 4:
+            command_date(&pieces);
+            break;
+        case 5:
+            command_historic(pieces,finished,commandList,history,openFileList);
+            break;
+        case 6:
+            command_open(pieces,openFileList);
+            break;
+        case 7:
+            command_close(pieces,openFileList);
+            break;
+        case 8:
+            command_dup(pieces,openFileList);
+            break;
+        case 9:
+            command_infosys();
+            break;
+        case 10:
+            command_help(pieces,commandList);
+            break;
+        case 11:case 12:case 13:
+            command_exit(finished,openFileList,history,commandList);
+            break;
+        default:
+            break;
     }
 }
 
@@ -114,7 +146,7 @@ void AddToHistoryList(Item *command,HistoryList *lista){
 
 /*authors Prints the names and logins of the program authors. authors -l prints
 only the logins and authors -n prints only the names*/
-void command_authors(char * pieces[],void*,void*,void*) {
+void command_authors(char * pieces[]) {
     const char * names[] = {"Pablo Herrero","Tiago Volta"};
     const char * logins[] = {"pablo.herrero.diaz","tiago.velosoevolta"};
     int NumAuthors = 2;
@@ -132,24 +164,24 @@ void command_authors(char * pieces[],void*,void*,void*) {
 }
 
 //Muestra el PID del proceso actual
-void command_pid(void*,void*,void*,void*) {
+void command_pid() {
     printf("PID: %d\n", getpid());
 }
 
 //Muestra el PPID del proceso padre
-void command_ppid(void*,void*,void*,void*) {
+void command_ppid() {
     printf("PPID: %d\n", getppid());
 }
 
 //Comando que cambia el directorio de trabajo
-void command_cd(char *pieces[],void*,void*,void*) {
+void command_cd(char *pieces[]) {
     if (pieces[1] == NULL) {
         // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             printf("Directorio actual: %s\n", cwd);
         } else {
-            perror("rror obteniendo el directorio actual con getcwd()");
+            perror("Error obteniendo el directorio actual con getcwd()");
         }
     } else {
         // Cambia el directorio de trabajo actual al directorio especificado
@@ -160,7 +192,7 @@ void command_cd(char *pieces[],void*,void*,void*) {
 }
 
 //Muestra la fecha y hora actuales
-void command_date(char *pieces[],void*,void*,void*) {
+void command_date(char *pieces[]) {
     time_t t;
     struct tm *tm_info;
     char buffer[26];
@@ -174,6 +206,13 @@ void command_date(char *pieces[],void*,void*,void*) {
 
     //Imprime la fecha y hora actuales
     printf("Fecha y hora actuales: %s\n", buffer);
+}
+
+void repeatCommand(Pos p,bool *finished,const char *pieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+    char *trozos[LENGTH_MAX];
+    Item *comando = getItem(p, *history);
+    int NumTrozos = SplitString(*comando,trozos);
+    processInput(finished,comando,trozos,commandList,history,openFileList);
 }
 
 
@@ -191,17 +230,17 @@ a historic command could yield an infinite loop or a stack overflow
 calls to historic N itself in the historic list if they want so (See the
 NOTES ON LIST IMPLEMENTATIONS at the end of this document)*/
 
-void command_historic (char *pieces,HistoryList *list,void*,void*) {
+void command_historic (char *pieces,bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList) {
     char *NoValidCharacter;
     if (&pieces[1] != NULL) {      //Si el comando es algo más que historic
         const long int n = strtol(&pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
         if(NoValidCharacter == '\0') {
             if(number>=0) {
-                repeatCommand(number,*list);
+                repeatCommand(number,finished,pieces,commandList,history,openFileList);
             }else {
                 number = -number;       //Cambiar el signo
-                printLastN(*list,number);
+                printLastN(*history,number);
             }
         }else if(NoValidCharacter == &pieces[1]) {
             perror("No se introdujo ningún número válido.\n");
@@ -209,20 +248,20 @@ void command_historic (char *pieces,HistoryList *list,void*,void*) {
             printf("Parte de la cadena no es válida: %s\n", NoValidCharacter);
             printf("Parte numérica leída: %d\n", number);
             if(number>=0) {
-                repeatCommand(number,*list);
+                repeatCommand(number,finished,pieces,commandList,history,openFileList);
             }else {
                 number = -number;       //Cambiar el signo
-                printLastN(*list,number);
+                printLastN(*history,number);
             }
         }
     }else {
-        printList(*list);
+        printList(*history);
     }
 
 
 }
 
-void command_open(char *pieces[],OpenFileList *openFileList,void*,void*) {
+void command_open(char *pieces[],OpenFileList *openFileList) {
     int i, df, mode = 0;
 
     // Si no se especificó un archivo, listar los archivos abiertos
@@ -252,7 +291,7 @@ void command_open(char *pieces[],OpenFileList *openFileList,void*,void*) {
     }
 }
 //Función que cierra un archivo a partir de su descriptor
-void command_close(char *pieces[],OpenFileList *openFileList,void*,void*) {
+void command_close(char *pieces[],OpenFileList *openFileList) {
     int df;
 
     // Si no se especifica un descriptor o el descriptor es menor que 0, listar los archivos abiertos
@@ -268,7 +307,7 @@ void command_close(char *pieces[],OpenFileList *openFileList,void*,void*) {
         RemoveFromOpenFiles(openFileList,df);  // Elimina el archivo de la lista de archivos abiertos
     }
 }
-void command_dup(char *pieces[], OpenFileList *openFileList,void*,void*) {
+void command_dup(char *pieces[], OpenFileList *openFileList) {
     int df, duplicated;
     char aux[MAXNAME], *p;
 
@@ -294,7 +333,7 @@ void command_dup(char *pieces[], OpenFileList *openFileList,void*,void*) {
     AddToOpenFiles(openFileList,duplicated, fcntl(duplicated, F_GETFL), aux);
 }
 //Comando que muestra información del sistema
-void command_infosys(void*,void*,void*,void*) {
+void command_infosys() {
     // Obtiene información del sistema
     struct utsname sysinfo;
 
@@ -315,7 +354,7 @@ void command_infosys(void*,void*,void*,void*) {
 
 
 //Comando que muestra los comandos disponibles
-void command_help(char * pieces[],CommandList *commandList,void*,void*) {
+void command_help(char * pieces[],CommandList *commandList) {
     if (pieces[1] != NULL) {
         for (int i=0; i<commandList->total ;i++) {
             if(strcmp(commandList->commands[i].name,pieces[1]) == 0) {

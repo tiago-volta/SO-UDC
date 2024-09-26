@@ -56,12 +56,6 @@ void printList(HistoryList L) {
     }
 }
 
-void repeatCommand(Pos p, HistoryList L) {
-    char *trozos[LENGTH_MAX];
-    Item *comando = getItem(p, L);
-    int NumTrozos = SplitString(*comando,trozos);
-    processInput(trozos, NumTrozos);
-}
 
 void printLastN (HistoryList L, int n) {
     printf("Last %d comands List: \n",n);

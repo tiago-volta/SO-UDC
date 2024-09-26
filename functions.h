@@ -27,23 +27,25 @@
 
 void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
-void processInput(bool *finished,const char *str,const char *pieces, int numPieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+void processInput(bool *finished,const char *str,const char *pieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
 int SplitString(char *str, char *pieces[]);
 void AddToCommandList(char *command[],HistoryList *lista);
 void AddToHistoryList(Item *command,HistoryList *lista);
 void PredefinedCommands(CommandList *commandList);
+void repeatCommand(Pos p,bool *finished,const char *pieces, CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
 
-void command_authors(char * pieces[],void*,void*,void*);
-void command_pid(void*,void*,void*,void*);
-void command_ppid(void*,void*,void*,void*);
-void command_cd(char *pieces[],void*,void*,void*);
-void command_date(char *pieces[],void*,void*,void*);
-void command_historic (char *pieces,HistoryList *list,void*,void*);
-void command_open(char *pieces[],OpenFileList *openFileList,void*,void*);
-void command_close(char *pieces[],OpenFileList *openFileList,void*,void*);
-void command_dup(char *pieces[], OpenFileList *openFileList,void*,void*);
-void command_infosys(void*,void*,void*,void*);
-void command_help(char * pieces[],CommandList *commandList,void*,void*);
+
+void command_authors(char * pieces[]);
+void command_pid();
+void command_ppid();
+void command_cd(char *pieces[]);
+void command_date(char *pieces[]);
+void command_historic (char *pieces,bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+void command_open(char *pieces[],OpenFileList *openFileList);
+void command_close(char *pieces[],OpenFileList *openFileList);
+void command_dup(char *pieces[], OpenFileList *openFileList);
+void command_infosys();
+void command_help(char * pieces[],CommandList *commandList);
 void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList);
 
 #endif //FUNCTIONS_H

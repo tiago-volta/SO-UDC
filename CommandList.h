@@ -13,8 +13,7 @@
 typedef struct {
     char name[LENGTH_MAX];
     char description[LENGTH_MAX];
-    void (*func)(void *, void *, void *, void *);
-    int numArgs;
+    int ID;
 }Command;
 
 typedef struct {
