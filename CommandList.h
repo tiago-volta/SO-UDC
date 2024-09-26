@@ -7,17 +7,19 @@
 
 #include <stdio.h>
 
-#define LENGTH_MAX 1024
-#define MAX 4096
+#define LENGTH_MAX_NAME 15
+#define LENGTH_MAX_DESCRIPTION 100
+
+#define LENGTH_MAX_LIST 4096
 
 typedef struct {
-    char name[LENGTH_MAX];
-    char description[LENGTH_MAX];
+    char name[LENGTH_MAX_NAME];
+    char description[LENGTH_MAX_DESCRIPTION];
     int ID;
 }Command;
 
 typedef struct {
-    Command commands[MAX];
+    Command commands[LENGTH_MAX_LIST];
     int total;
 }CommandList;
 

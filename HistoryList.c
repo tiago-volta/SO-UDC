@@ -24,8 +24,8 @@ Pos first(HistoryList L){
 }
 
 //Recupera el contenido de un elemento cualquiera de la lista
-Item *getItem(Pos p, HistoryList L){
-    return L.data[p];                           //Devuelve el elemento dada la posición el la lista
+Item *getItem(Pos p, HistoryList *L){
+    return L->data[p];                           //Devuelve el elemento dada la posición el la lista
 }
 
 //Inserta un elemento en la lista antes de la posición indicada, si la posicion es LNULL se añade al final
@@ -48,20 +48,28 @@ bool insertCommand(Item *d, Pos p, HistoryList *L) {      //Se pasa la lista por
 }
 
 //Funciones del comando
-
-void printList(HistoryList L) {
-    printf("History List: \n");
-    for (int i = 0; i <= L.lastPos; i++) {
-        printf("%d: %s\n", i,L.data[i]);
+//Añadir lo de entrada vacía si tiempo
+void printList(HistoryList *L) {
+    if (L->lastPos == -1) {
+        printf("La lista de historial está vacía.\n");
+        return;
+    }
+    printf("History List:\n");
+    for (int i = 0; i <= L->lastPos; i++) {
+        if (strlen(L->data[i]) > 0) {
+            printf("%d: %s\n", i, L->data[i]);
+        } else {
+            printf("%d: (entrada vacía)\n", i);
+        }
     }
 }
 
 
-void printLastN (HistoryList L, int n) {
-    printf("Last %d comands List: \n",n);
-    if (L.lastPos > n-2) {
-        for (int i = L.lastPos; i >= 0 && n != 0; i--,n--) {
-            printf("%d: %s\n", i,L.data[i]);
+void printLastN (HistoryList *L, int n) {
+    if (L->lastPos > n-2) {
+        printf("Last %d comands List: \n",n);
+        for (int i = L->lastPos - 1 ; i >= 0 && n != 0; i--,n--) {
+            printf("%d: %s\n", i,L->data[i]);
         }
     }else
         perror("No se han ejecutado comandos suficientes");

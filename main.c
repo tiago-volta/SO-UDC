@@ -1,17 +1,18 @@
-#include "functions.h" // Incluir el archivo de cabecera
+#include <stdio.h>
 
+#include "functions.h"
 
-int main() {
-    bool finished = false; // Inicializar la variable
-    HistoryList History;
-    CommandList ListaComandos;
-    OpenFileList OpenFileList;
-    createEmptyList(&History);
-    PredefinedCommands(&ListaComandos);
-    InitializeOpenFileList(&OpenFileList);
+int main(void){
+    bool finished = false;
+    CommandList cmdList;
+    HistoryList historyList;
+    OpenFileList openFileList;
+    PredefinedCommands(&cmdList);
+    createEmptyList(&historyList);
+    InitializeOpenFileList(&openFileList);
     while (!finished) {
         printPrompt();
-        readInput(&finished,&ListaComandos,&History,&OpenFileList);// Aquí podrías agregar lógica para cambiar `terminado` según sea necesario
+        readInput(&finished,&cmdList,&historyList,&openFileList);
     }
     return 0;
 }

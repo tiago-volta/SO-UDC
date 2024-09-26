@@ -1,5 +1,5 @@
 //
-// Created by pablojhd on 22/09/24.
+// Created by pablojhd on 26/09/24.
 //
 
 #ifndef HISTORYLIST_H
@@ -62,7 +62,7 @@ bool insertCommand(Item *d, Pos p, HistoryList *L);
  * SALIDAS: el contenido del elemento que está en esa posición
  * PRECONDICIÓN: la lista inicializada, no vacía y que la posición introducida sea válida en la lista
  */
-Item *getItem(Pos p, HistoryList L);
+Item *getItem(Pos p, HistoryList *L);
 /*
  * OBJETIVO: modificar el contenido de un elemento de la lista
  * ENTRADAS:
@@ -73,9 +73,9 @@ Item *getItem(Pos p, HistoryList L);
  * PRECONDICIÓN: la lista inicializada, no vacía y que la posición introducida sea válida en la lista
  */
 
-void printList(HistoryList L);
+void printList(HistoryList *L);
 
-void printLastN (HistoryList L, int n);
+void printLastN (HistoryList *L, int n);
 
 void clearHistoryList(HistoryList *L);
 
