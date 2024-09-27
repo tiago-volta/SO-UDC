@@ -1,14 +1,20 @@
-//
-// Created by pablojhd on 26/09/24.
-//
+/*
+ * TITLE: Sistemas Operativos
+ * SUBTITLE: Practica 0
+ * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
+ * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
+ * GROUP: 2.3
+ * DATE: 27 / 09 / 24
+ */
 
 #include "functions.h"
 
+//Imprime el prompt
 void printPrompt(){
     printf("→ ");
 }
 
-//Funcion auxiliar para el read no tiene que estar en la cabecera
+//Funcion auxiliar para el read
 int SplitString(char *str, char *pieces[]){
     int i=1;
     if ((pieces[0]=strtok(str," \n\t"))==NULL)
@@ -20,14 +26,18 @@ int SplitString(char *str, char *pieces[]){
 
 
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList){
-    char input[LENGTH_MAX_INPUT];     //Simplemente sirve para leer la cadena, después de trocearla solo guarda el primer trozo
+    char input[LENGTH_MAX_INPUT];
     if (fgets(input,sizeof(input),stdin) != NULL) {
-        char *trozos[LENGTH_MAX_INPUT];   //Array de strings, es decir, en cada posición se guarda un trozo de la entrada
+        char *trozos[LENGTH_MAX_INPUT];
         Item cadena;
         strcpy(cadena,input);       //Guardo una copia de la cadena en el historial
+        size_t len = strlen(cadena);
+        if (len > 0 && cadena[len - 1] == '\n') {
+            cadena[len - 1] = '\0';  // Reemplazo '\n' con '\0' para que luego en el historial no de problemas al imprimir la cadena
+        }
         int NumTrozos=SplitString(input,trozos);  //Splitea la cadena en trozos
         if (NumTrozos>0) {
-            processInput(finished,cadena,trozos,commandList,history,openFileList);
+            processInput(finished,&cadena,trozos,commandList,history,openFileList);
         }
     }else
         perror ("Error al leer la entrada");
@@ -35,7 +45,6 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
 
 
 void PredefinedCommands(CommandList *commandList) {
-    // Lista de comandos y descripciones
     const char *names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
@@ -59,23 +68,25 @@ void PredefinedCommands(CommandList *commandList) {
         "Ends the shell."
     };
 
-    // Inicializar el número total de comandos
+    // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     commandList->total = sizeof(names) / sizeof(names[0]);
 
-    // Copiar los valores en la estructura CommandList
+    // Copiamos los valores en el struct CommandList
     for (int i = 0; i < commandList->total; i++) {
         strncpy(commandList->commands[i].name, names[i], LENGTH_MAX_NAME - 1);
         strncpy(commandList->commands[i].description, descriptions[i], LENGTH_MAX_DESCRIPTION - 1);
-        commandList->commands[i].ID = i;  // Asignar el ID único
+        commandList->commands[i].ID = i;  // Asignar un ID único de cada comando
     }
 }
 
+//Función auxiliar para guardar en el historial
 void AddToHistoryList(Item *command,HistoryList *lista){
     Item *newItem = command;
-    insertCommand(newItem,LNULL,lista);
+    insertCommand(newItem,HNULL,lista);
 }
 
-int getCmdIdAndHistory (Item *str,const char *pieces[],CommandList *commandList,HistoryList *history) {
+//Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
+int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,HistoryList *history) {
     for (int i=0; i<commandList->total ;i++) {
         if(strcmp(commandList->commands[i].name,pieces[0]) == 0){
             AddToHistoryList(str,history);                  //Se guarda en el historial
@@ -85,6 +96,7 @@ int getCmdIdAndHistory (Item *str,const char *pieces[],CommandList *commandList,
     return -1;
 }
 
+//Procesa el comando introducido
 void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
         case 0:
@@ -131,6 +143,7 @@ void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandL
     }
 }
 
+//Imprime el nombre y/o los logins de los autores
 void command_authors(char * pieces[]) {
     const char * names[] = {"Pablo Herrero","Tiago Volta"};
     const char * logins[] = {"pablo.herrero.diaz","tiago.velosoevolta"};
@@ -161,23 +174,21 @@ void command_ppid() {
 
 //Comando que cambia el directorio de trabajo
 void command_cd(char *pieces[]) {
-    if (pieces[1] == NULL) {
-        // Si no se especifica un directorio, imprime el directorio de trabajo actual
+    if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             printf("Directorio actual: %s\n", cwd);
         } else {
-            perror("Error obteniendo el directorio actual con getcwd()");
+            perror("Error obteniendo el directorio actual");
         }
-    } else {
-        // Cambia el directorio de trabajo actual al directorio especificado
+    } else {                                            // Cambia el directorio de trabajo actual al directorio especificado
         if (chdir(pieces[1]) != 0) {
-            perror("Error cambiando el directorio con chdir()");
+            perror("Error cambiando el directorio");
         }
     }
 }
 
-//Muestra la fecha y hora actuales, cambiar para que procese las cosas pedidas
+//Muestra la fecha y hora actuales
 void command_date(char *pieces[]) {
     time_t t;
     struct tm *tm_info;
@@ -200,22 +211,25 @@ void command_date(char *pieces[]) {
     }
 }
 
-
-void repeatCommand(Pos p,bool *finished,char *pieces[], CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+//Funcion auxiliar para repetir un comando guardado en el historial
+void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
     char *trozos[LENGTH_MAX];
+    Item cadena;
     Item *comando = getItem(p, history);
+    strcpy(cadena,*comando);
     SplitString(*comando,trozos);
-    processInput(finished,comando,trozos,commandList,history,openFileList);
+    processInput(finished,&cadena,trozos,commandList,history,openFileList);
 }
 
+//Mustra el historial de comandos introducidos, o repite un comando ya introducido o imprimer los últimos n comandos
 void command_historic (char *pieces[],bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList) {
     char *NoValidCharacter;
-    if (pieces[1] != NULL) {      //Si el comando es algo más que historic
+    if (pieces[1] != NULL) {
         const long int n = strtol(pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
             if(*NoValidCharacter == '\0') {
-                if(0 <= number <= history->lastPos) {
-                    repeatCommand(number,finished,pieces,commandList,history,openFileList);
+                if (0 <= number && number <= history->lastPos) {
+                    repeatCommand(number,finished,commandList,history,openFileList);
                 }else if (number < 0) {
                     number = -number;       //Cambiar el signo
                     printLastN(history,number);
@@ -226,8 +240,8 @@ void command_historic (char *pieces[],bool *finished,CommandList *commandList, H
             }else{
                 printf("Parte de la cadena no es válida: %s\n", NoValidCharacter);
                 printf("Parte numérica leída: %d\n", number);
-                if(0 <= number <= history->lastPos) {
-                    repeatCommand(number,finished,pieces,commandList,history,openFileList);
+                if (0 <= number && number <= history->lastPos) {
+                    repeatCommand(number,finished,commandList,history,openFileList);
                 }else if (number < 0) {
                     number = -number;       //Cambiar el signo
                     printLastN(history,number);
@@ -240,6 +254,7 @@ void command_historic (char *pieces[],bool *finished,CommandList *commandList, H
     }
 }
 
+//Función que abre un archivo con un modo específico
 void command_open(char *pieces[],OpenFileList *openFileList) {
     int i, df, mode = 0;
 
@@ -270,7 +285,7 @@ void command_open(char *pieces[],OpenFileList *openFileList) {
     }
 }
 
-//Función que cierra un archivo a partir de su descriptor, mejorar si da tiempo
+//Función que cierra un archivo a partir de su descriptor
 void command_close(char *pieces[],OpenFileList *openFileList) {
     int df;
 
@@ -289,6 +304,7 @@ void command_close(char *pieces[],OpenFileList *openFileList) {
     }
 }
 
+//Función que duplica un archivo a partir de du identificador
 void command_dup(char *pieces[], OpenFileList *openFileList) {
     int df, duplicated;
     char aux[MAXNAME], *p;
@@ -317,8 +333,8 @@ void command_dup(char *pieces[], OpenFileList *openFileList) {
 
 }
 
+//Devuelve información sobre el sistema
 void command_infosys() {
-    // Obtiene información del sistema
     struct utsname sysinfo;
 
     // Llama a la función uname para obtener la información del sistema
@@ -327,7 +343,6 @@ void command_infosys() {
         return;
     }
 
-    // Imprime la información del sistema
     printf("Información del sistema:\n");
     printf("Nombre del sistema operativo: %s\n", sysinfo.sysname);
     printf("Nombre del nodo: %s\n", sysinfo.nodename);
@@ -351,7 +366,7 @@ void command_help(char * pieces[],CommandList *commandList) {
     }
 }
 
-//Falta por revisar y hacerla modulos
+//Comando que limpia todas las listas, cierra los archivos y finaliza el programa
 void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList) {
     // Cierra todos los archives abiertos
     for (int i = 0; i < openFileList->numOpenFiles; i++) {
@@ -359,28 +374,14 @@ void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *histor
             perror("Error al cerrar el archivo");
         }
     }
-
-    // Limpia la lista de archivos abiertos
-    openFileList->numOpenFiles = 0;
-
-    // Limpia la lista de historial usando la función del TAD
+    // Limpiamos las listas utilizadas en el programa
+    CleanCommandList(commandList);
+    CleanOpenFilesList(openFileList);
     clearHistoryList(history);
 
-    // Limpia la lista de comandos disponibles
-    commandList->total = 0;
-
-    // Registra el evento de salida
-    FILE *logFile = fopen("exit_log.txt", "a");
-    if (logFile != NULL) {
-        fprintf(logFile, "Shell exited successfully.\n");
-        fclose(logFile);
-    } else {
-        perror("Error al abrir el archivo de registro");
-    }
-
-    // Establece una bandera para indicar que el shell debe terminar
+    // Establece una bandera para indicar que la shell debe terminar
     *finished = true;
 
     // Imprime un mensaje de despedida
-    printf("Saliendo del shell...\n");
+    printf("Saliendo de la shell...\n");
 }
