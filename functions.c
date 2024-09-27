@@ -183,16 +183,23 @@ void command_date(char *pieces[]) {
     struct tm *tm_info;
     char buffer[26];
 
-    //Obtiene la hora actual
+    // Obtiene la hora actual
     time(&t);
     tm_info = localtime(&t);
 
-    //Formatea la fecha y hora en una cadena
-    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+    if (pieces[1] == NULL || strcmp(pieces[1], "-t") == 0) {
+        // Si no hay argumentos o si se especifica "-t", imprime solo la hora
+        strftime(buffer, 26, "%H:%M:%S", tm_info);
+        printf("Hora actual: %s\n", buffer);
+    }
 
-    //Imprime la fecha y hora actuales
-    printf("Fecha y hora actuales: %s\n", buffer);
+    if (pieces[1] == NULL || strcmp(pieces[1], "-d") == 0) {
+        // Si no hay argumentos o si se especifica "-d", imprime solo la fecha
+        strftime(buffer, 26, "%Y-%m-%d", tm_info);
+        printf("Fecha actual: %s\n", buffer);
+    }
 }
+
 
 void repeatCommand(Pos p,bool *finished,char *pieces[], CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
     char *trozos[LENGTH_MAX];

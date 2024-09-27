@@ -1,11 +1,11 @@
 # Variables
-CC = gcc                   # Compilador
-CFLAGS = -g -Wall -Wextra -std=c99 -g  # Flags para el compilador
-SRC = main.c functions.c CMDlist.c HistoryList.c CommandList.c  # Archivos fuente
-OBJ = $(SRC:.c=.o)         # Archivos objeto
-TARGET = exe       # Nombre del ejecutable
+CC = gcc                                # Compilador
+CFLAGS = -g -Wall -Wextra -std=c99      # Flags para el compilador
+SRC = main.c functions.c FileList.c HistoryList.c CommandList.c  # Archivos fuente
+OBJ = $(SRC:.c=.o)                      # Archivos objeto
+TARGET = P0                             # Nombre del ejecutable
 
-# Regla por defecto
+# Regla por defecto: compilar todo
 all: $(TARGET)
 
 # Regla para crear el ejecutable
@@ -16,15 +16,12 @@ $(TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-main.o: main.c functions.h HistoryList.h CMDlist.h CommandList.h
+# Dependencias entre los archivos fuente y sus cabeceras
+main.o: main.c functions.h HistoryList.h FileList.h CommandList.h
 functions.o: functions.c functions.h
 HistoryList.o: HistoryList.c HistoryList.h
-CMDlist.o: CMDlist.c CMDlist.h
+FileList.o: FileList.c FileList.h
 CommandList.o: CommandList.c CommandList.h
-
-# Limpiar archivos generados
-clean:
-	rm -f $(OBJ) $(TARGET)
 
 # Regla para mostrar ayuda
 help:
@@ -34,4 +31,11 @@ help:
 	@echo "  make clean     Elimina los archivos objeto y el ejecutable."
 	@echo "  make help      Muestra esta ayuda."
 
-.PHONY: all clean help  # Evita conflictos con archivos llamados clean o help
+# Regla para limpiar archivos generados
+clean:
+	rm -f $(OBJ) $(TARGET)
+
+# Definir reglas "phony" (que no corresponden a archivos)
+.PHONY: all clean help
+
+
