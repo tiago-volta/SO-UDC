@@ -48,6 +48,8 @@ void PredefinedCommands(CommandList *commandList) {
     const char *names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
+        "makefile","makedir","listfile","cwd","listdir",
+        "reclist", "revlist","erase","delrec",
         "help", "quit", "exit", "bye"
     };
 
@@ -130,11 +132,30 @@ void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandL
             command_infosys();
             break;
         case 10:
-            command_help(pieces,commandList);
+            command_makefile(pieces);
             break;
         case 11:
+            break;
         case 12:
+            break;
         case 13:
+            break;
+        case 14:
+            break;
+        case 15:
+            break;
+        case 16:
+            break;
+        case 17:
+            break;
+        case 18:
+            break;
+        case 19:
+            command_help(pieces,commandList);
+            break;
+        case 20:
+        case 21:
+        case 22:
             command_exit(finished,fileList,history,commandList);
             break;
         default:
@@ -384,4 +405,40 @@ void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *histor
 
     // Imprime un mensaje de despedida
     printf("Saliendo de la shell...\n");
+}
+
+//Sino se le pasa argumento imprime el directorio actual, si se le pasa argumento crea un archivo con ese nomnbre, si ya existe no lo crea
+void command_makefile(char *pieces[]) {
+    if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        char cwd[LENGTH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio actual: %s\n", cwd);
+        } else {
+            perror("Error obteniendo el directorio actual");
+        }
+    }else {
+        if (access(pieces[1],F_OK) != -1) {                 //Si el archivo no existe devuelve 0 sino -1
+            printf("Error: El archivo '%s' ya existe.\n", pieces[1]);
+        }else {
+            FILE *logFile = fopen(pieces[1], "w");
+            if (logFile != NULL && fclose(logFile) != EOF) {
+                printf("Archivo '%s' creado correctamente.\n", pieces[1]);
+            }else
+                perror("Error al cerrar el archivo");
+        }
+    }
+
+}
+//gives information on files or directories
+void listFile(char *pieces[]) {
+    if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        char cwd[LENGTH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio actual: %s\n", cwd);
+        } else {
+            perror("Error obteniendo el directorio actual");
+        }
+    }else {
+
+    }
 }
