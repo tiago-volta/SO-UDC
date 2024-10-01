@@ -1,11 +1,4 @@
-/*
- * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
- * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
- * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
- * GROUP: 2.3
- * DATE: 27 / 09 / 24
- */
+//Código fuente con las funciones que se pueden ejecutar en el shell
 
 #include "functions.h"
 
@@ -53,7 +46,7 @@ void PredefinedCommands(CommandList *commandList) {
         "help", "quit", "exit", "bye"
     };
 
-    const char *descriptions[] = {
+        const char *descriptions[] = {
         "Prints the names and logins of the program authors. authors -l prints only the logins. authors -n prints only the names.",
         "Prints the pid of the process executing the shell.",
         "Prints the pid of the shell’s parent process.",
@@ -64,11 +57,21 @@ void PredefinedCommands(CommandList *commandList) {
         "Closes the df file descriptor and eliminates the corresponding item from the list.",
         "Duplicates the df file descriptor creating the corresponding new entry on the file list.",
         "Prints information on the machine running the shell.",
-        "help displays a list of available commands. help cmd gives a brief help on the usage of command cmd.",
+        "Creates a new file with the specified name. makefile filename creates a new empty file.",
+        "Creates a new directory with the specified name. makedir dirname creates a new directory.",
+        "Lists the files in the current directory or the specified directory. listfile lists all files, with options for details.",
+        "Prints the current working directory of the shell.",
+        "Lists directories contents",
+        "Lists directories recursively (subdirectories after).",
+        "Lists directories recursively (subdirectories before).",
+        "Deletes files and/or empty directories.",
+        "Deletes files and/pr non empty directories recursively.",
+        "Displays a list of available commands or provides help on a specific command.",
         "Ends the shell.",
         "Ends the shell.",
         "Ends the shell."
     };
+
 
     // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     commandList->total = sizeof(names) / sizeof(names[0]);
@@ -135,14 +138,18 @@ void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandL
             command_makefile(pieces);
             break;
         case 11:
+            command_makedir(pieces);
             break;
         case 12:
+            command_listFile(pieces);
             break;
         case 13:
+            command_cwd();
             break;
         case 14:
             break;
         case 15:
+            command_reclist(pieces);
             break;
         case 16:
             break;
@@ -245,7 +252,7 @@ void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *
 //Mustra el historial de comandos introducidos, o repite un comando ya introducido o imprimer los últimos n comandos
 void command_historic (char *pieces[],bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList) {
     char *NoValidCharacter;
-    if (pieces[1] != NULL) {
+    if (pieces[1] != NULL) {    printf("Comando reclist detectado.\n");
         const long int n = strtol(pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
             if(*NoValidCharacter == '\0') {
@@ -407,6 +414,45 @@ void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *histor
     printf("Saliendo de la shell...\n");
 }
 
+//determina el tipo de un archivo a partir de su modo/permisos
+char LetraTF (mode_t m){
+    switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
+        case S_IFSOCK: return 's'; /*socket */
+        case S_IFLNK: return 'l'; /*symbolic link*/
+        case S_IFREG: return '-'; /* fichero normal*/
+        case S_IFBLK: return 'b'; /*block device*/
+        case S_IFDIR: return 'd'; /*directorio */
+        case S_IFCHR: return 'c'; /*char device*/
+        case S_IFIFO: return 'p'; /*pipe*/
+        default: return '?'; /*desconocido, no deberia aparecer*/
+    }
+}
+
+//devuelve los permisos de un fichero en formato rwx---, a partir del campo st_mode de la estructura stat
+char * ConvierteModo(mode_t m){
+    char *permisos;
+
+    if ((permisos=(char *) malloc (12))==NULL)
+        return NULL;
+    strcpy (permisos,"---------- ");
+
+    permisos[0]=LetraTF(m);
+    if (m&S_IRUSR) permisos[1]='r';    /*propietario*/
+    if (m&S_IWUSR) permisos[2]='w';
+    if (m&S_IXUSR) permisos[3]='x';
+    if (m&S_IRGRP) permisos[4]='r';    /*grupo*/
+    if (m&S_IWGRP) permisos[5]='w';
+    if (m&S_IXGRP) permisos[6]='x';
+    if (m&S_IROTH) permisos[7]='r';    /*resto*/
+    if (m&S_IWOTH) permisos[8]='w';
+    if (m&S_IXOTH) permisos[9]='x';
+    if (m&S_ISUID) permisos[3]='s';    /*setuid, setgid y stickybit*/
+    if (m&S_ISGID) permisos[6]='s';
+    if (m&S_ISVTX) permisos[9]='t';
+
+    return permisos;
+}
+
 //Sino se le pasa argumento imprime el directorio actual, si se le pasa argumento crea un archivo con ese nomnbre, si ya existe no lo crea
 void command_makefile(char *pieces[]) {
     if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
@@ -429,8 +475,44 @@ void command_makefile(char *pieces[]) {
     }
 
 }
+
+//Crea un directorio
+void command_makedir(char *pieces[]) {
+    if (pieces[1] == NULL) {
+        fprintf(stderr, "No se ha especificado el nombre del directorio\n"); //fprintf con stedrr, porque es un error logico del usuario
+        return;
+    }
+    struct stat st = {0};
+    //Verifica si eldirectorio ya existe
+    if (stat(pieces[1], &st) == 0 && S_ISDIR(st.st_mode)) {
+        printf("Imposible crear '%s', ya existe.\n", pieces[1]);
+        return;
+    }
+    //Crea el directorio con permisos de lectura, escritura y ejecución para el usuario
+    if (mkdir(pieces[1], 0777) == -1) { //no tiene permisos para crear el directorio
+        perror("Permision denegada");
+    } else {
+        printf("Directorio creado: %s\n", pieces[1]);
+
+        //Esto creo que no es necesario
+        //Obtener información del nuevo directorio
+        if (stat(pieces[1], &st) == 0) {  //Volver a llamar a stat para obtener el modo del nuevo directorio
+            // Obtener permisos del directorio
+            char *permisos = ConvierteModo(st.st_mode);  //Convierte el modo a formato legible
+            if (permisos != NULL) {
+                printf("Permisos del nuevo directorio: %s\n", permisos);
+                free(permisos);  //libera la memoria
+            } else {
+                fprintf(stderr, "Error al asignar memoria para los permisos.\n");
+            }
+        } else {
+            perror("Error al obtener información del nuevo directorio");
+        }
+    }
+}
+
 //gives information on files or directories
-void listFile(char *pieces[]) {
+void command_listFile(char *pieces[]) {
     if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -442,3 +524,100 @@ void listFile(char *pieces[]) {
 
     }
 }
+
+//Printea el directorio actual
+void command_cwd() {
+    char cwd[LENGTH_MAX]; //buffer para almacenar el directorio actual
+
+    //Obtiene el directorio actual
+    if(getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("Directorio actual: %s\n", cwd);
+    } else {
+        perror("Error obteniendo el directorio actual");
+    }
+}
+
+void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime) {
+    DIR *dir;
+    struct dirent *entry;
+
+    //se abre el directorio especidifcado por dirName
+    dir = opendir(dirName);
+    if (dir == NULL) {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        //Verifica si se deben mostrar archivos ocultos (que comienzan con .)
+        if (!showHidden && entry->d_name[0] == '.') {
+            continue;  // Omitir archivos ocultos
+        }
+
+        printf("Archivo: %s\n", entry->d_name);
+
+        //si es showLong es true, se define una estructura stat para almacenar la información del archivo
+        if (showLong) {
+            struct stat fileStat;
+            char fullPath[1024];
+            snprintf(fullPath, sizeof(fullPath), "%s/%s", dirName, entry->d_name); //ruta completa del archivo
+
+            if (stat(fullPath, &fileStat) == 0) {
+                printf("Tamaño: %ld bytes\n", fileStat.st_size);
+                if (showAccessTime) {
+                    printf("Último acceso: %s", ctime(&fileStat.st_atime));
+                }
+            }
+        }
+
+        //Recursividad para subdirectorios
+        //si la entrada es un directorio y no es el actual o el padre, se construye la nueva ruta y se llama a la función recursivamente
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            char newDir[1024];
+            snprintf(newDir, sizeof(newDir), "%s/%s", dirName, entry->d_name);
+            listDirectoryRecursively(newDir, showHidden, showLong, showLink, showAccessTime);
+        }
+    }
+    //cierra el directorio
+    closedir(dir);
+}
+
+//Intepreta los argumentos y llama a listDirectoryRecursively cpn los parametros adecuados
+void command_reclist(char *pieces[]) {
+    bool showHidden = false; //si se deben mostrar los archivos ocultos
+    bool showLong = false; //si se debe mostrar información detallada
+    bool showLink = false; //si se deben mostrar los enlaces simbólicos
+    bool showAccessTime = false; //si se deben mostrar las fechas de acceso
+    int i = 1;
+
+    //Analiza   las opciones
+    for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
+        if (strcmp(pieces[i], "-hid") == 0)
+            showHidden = true;
+        else if (strcmp(pieces[i], "-long") == 0)
+            showLong = true;
+        else if (strcmp(pieces[i], "-link") == 0)
+            showLink = true;
+        else if (strcmp(pieces[i], "-acc") == 0)
+            showAccessTime = true;
+        else {
+            fprintf(stderr, "Opción no reconocida: %s\n", pieces[i]);
+            return;
+        }
+    }
+
+    //Si no se especifican directorios
+    if (pieces[i] == NULL) {
+        fprintf(stderr, "Error: Debes especificar al menos un directorio\n");
+        return;
+    }
+
+    //Listar directorios recursivamente
+    while (pieces[i] != NULL) {
+        printf("***************%s\n", pieces[i]);
+        listDirectoryRecursively(pieces[i], showHidden, showLong, showLink, showAccessTime);
+        i++;
+    }
+}
+
+
