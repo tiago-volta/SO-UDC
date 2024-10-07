@@ -1,4 +1,11 @@
-//Código fuente con las funciones que se pueden ejecutar en el shell
+/*
+ * TITLE: Sistemas Operativos
+ * SUBTITLE: Practica 0
+ * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
+ * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
+ * GROUP: 2.3
+ * DATE: 27 / 09 / 24
+ */
 
 #include "functions.h"
 
@@ -46,7 +53,7 @@ void PredefinedCommands(CommandList *commandList) {
         "help", "quit", "exit", "bye"
     };
 
-        const char *descriptions[] = {
+    const char *descriptions[] = {
         "Prints the names and logins of the program authors. authors -l prints only the logins. authors -n prints only the names.",
         "Prints the pid of the process executing the shell.",
         "Prints the pid of the shell’s parent process.",
@@ -66,12 +73,11 @@ void PredefinedCommands(CommandList *commandList) {
         "Lists directories recursively (subdirectories before).",
         "Deletes files and/or empty directories.",
         "Deletes files and/pr non empty directories recursively.",
-        "Displays a list of available commands or provides help on a specific command.",
+        "help displays a list of available commands. help cmd gives a brief help on the usage of command cmd.",
         "Ends the shell.",
         "Ends the shell.",
         "Ends the shell."
     };
-
 
     // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     commandList->total = sizeof(names) / sizeof(names[0]);
@@ -102,7 +108,7 @@ int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,Histor
 }
 
 //Procesa el comando introducido
-void processInput(bool *finished,Item *str,char *pieces[],CommandList *commandList, HistoryList *history,OpenFileList *fileList){
+void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
         case 0:
             command_authors(pieces);
@@ -147,16 +153,19 @@ void processInput(bool *finished,Item *str,char *pieces[],CommandList *commandLi
             command_cwd();
             break;
         case 14:
+            command_listDir(pieces);
             break;
         case 15:
             command_reclist(pieces);
             break;
         case 16:
+            command_revlist(pieces);
             break;
         case 17:
             command_erase(pieces);
             break;
         case 18:
+            command_delrec(pieces);
             break;
         case 19:
             command_help(pieces,commandList);
@@ -253,7 +262,7 @@ void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *
 //Mustra el historial de comandos introducidos, o repite un comando ya introducido o imprimer los últimos n comandos
 void command_historic (char *pieces[],bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList) {
     char *NoValidCharacter;
-    if (pieces[1] != NULL) {    printf("Comando reclist detectado.\n");
+    if (pieces[1] != NULL) {
         const long int n = strtol(pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
             if(*NoValidCharacter == '\0') {
@@ -415,45 +424,6 @@ void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *histor
     printf("Saliendo de la shell...\n");
 }
 
-//determina el tipo de un archivo a partir de su modo/permisos
-char LetraTF (mode_t m){
-    switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
-        case S_IFSOCK: return 's'; /*socket */
-        case S_IFLNK: return 'l'; /*symbolic link*/
-        case S_IFREG: return '-'; /* fichero normal*/
-        case S_IFBLK: return 'b'; /*block device*/
-        case S_IFDIR: return 'd'; /*directorio */
-        case S_IFCHR: return 'c'; /*char device*/
-        case S_IFIFO: return 'p'; /*pipe*/
-        default: return '?'; /*desconocido, no deberia aparecer*/
-    }
-}
-
-//devuelve los permisos de un fichero en formato rwx---, a partir del campo st_mode de la estructura stat
-char * ConvierteModo(mode_t m){
-    char *permisos;
-
-    if ((permisos=(char *) malloc (12))==NULL)
-        return NULL;
-    strcpy (permisos,"---------- ");
-
-    permisos[0]=LetraTF(m);
-    if (m&S_IRUSR) permisos[1]='r';    /*propietario*/
-    if (m&S_IWUSR) permisos[2]='w';
-    if (m&S_IXUSR) permisos[3]='x';
-    if (m&S_IRGRP) permisos[4]='r';    /*grupo*/
-    if (m&S_IWGRP) permisos[5]='w';
-    if (m&S_IXGRP) permisos[6]='x';
-    if (m&S_IROTH) permisos[7]='r';    /*resto*/
-    if (m&S_IWOTH) permisos[8]='w';
-    if (m&S_IXOTH) permisos[9]='x';
-    if (m&S_ISUID) permisos[3]='s';    /*setuid, setgid y stickybit*/
-    if (m&S_ISGID) permisos[6]='s';
-    if (m&S_ISVTX) permisos[9]='t';
-
-    return permisos;
-}
-
 //Sino se le pasa argumento imprime el directorio actual, si se le pasa argumento crea un archivo con ese nomnbre, si ya existe no lo crea
 void command_makefile(char *pieces[]) {
     if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
@@ -475,6 +445,43 @@ void command_makefile(char *pieces[]) {
         }
     }
 
+}
+
+char LetraTF (mode_t m){
+    switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
+        case S_IFSOCK: return 's'; /*socket */
+        case S_IFLNK: return 'l'; /*symbolic link*/
+        case S_IFREG: return '-'; /* fichero normal*/
+        case S_IFBLK: return 'b'; /*block device*/
+        case S_IFDIR: return 'd'; /*directorio */
+        case S_IFCHR: return 'c'; /*char device*/
+        case S_IFIFO: return 'p'; /*pipe*/
+        default: return '?'; /*desconocido, no deberia aparecer*/
+    }
+}
+
+char *GetPermissions(mode_t m) {
+    char *permisos;
+
+    if ((permisos=(char *) malloc (12))==NULL)
+        return NULL;
+    strcpy (permisos,"---------- ");
+
+    permisos[0]=LetraTF(m);
+    if (m&S_IRUSR) permisos[1]='r';     //Permiso de lectura por el propietario
+    if (m&S_IWUSR) permisos[2]='w';     //Permiso de escritura por el propietario
+    if (m&S_IXUSR) permisos[3]='x';     //Permiso de ejecución por el propietario
+    if (m&S_IRGRP) permisos[4]='r';     //Permiso de lectura por un grupo
+    if (m&S_IWGRP) permisos[5]='w';     //Permiso de escritura por un grupo
+    if (m&S_IXGRP) permisos[6]='x';     //Permiso de ejecución por un grupo
+    if (m&S_IROTH) permisos[7]='r';     //Permiso de lectura por otros
+    if (m&S_IWOTH) permisos[8]='w';     //Permiso de escritura por otros
+    if (m&S_IXOTH) permisos[9]='x';     //Permiso de ejecución por otros
+    if (m&S_ISUID) permisos[3]='s';    /*setuid, setgid y stickybit*/
+    if (m&S_ISGID) permisos[6]='s';
+    if (m&S_ISVTX) permisos[9]='t';
+
+    return permisos;
 }
 
 //Crea un directorio
@@ -499,7 +506,7 @@ void command_makedir(char *pieces[]) {
         //Obtener información del nuevo directorio
         if (stat(pieces[1], &st) == 0) {  //Volver a llamar a stat para obtener el modo del nuevo directorio
             // Obtener permisos del directorio
-            char *permisos = ConvierteModo(st.st_mode);  //Convierte el modo a formato legible
+            char *permisos = GetPermissions(st.st_mode);  //Convierte el modo a formato legible
             if (permisos != NULL) {
                 printf("Permisos del nuevo directorio: %s\n", permisos);
                 free(permisos);  //libera la memoria
@@ -512,17 +519,59 @@ void command_makedir(char *pieces[]) {
     }
 }
 
+
+
 //gives information on files or directories
+/*listfile [-long][-link][-acc] name1 name2 ..	lista ficheros;
+-long: listado largo
+-acc: acesstime
+-link: si es enlace simbolico, el path contenido
+*/
+
 void command_listFile(char *pieces[]) {
-    if (pieces[1] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
+    if (pieces[2] == NULL) {                            // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             printf("Directorio actual: %s\n", cwd);
         } else {
             perror("Error obteniendo el directorio actual");
         }
-    }else {
-
+    }else{
+        for (int i = 2; pieces[i] != NULL; i++) {
+            struct stat data;
+            //Poner esta comprobacion dentro haciendo funcion auxiliar porque si el comando - algo es no valido imprimirá dos errores el de esta comprobacion y el de comando no valido
+            if (stat(pieces[i],&data) == -1) {
+                fprintf(stderr, "Error al intentar acceder a %s: ", pieces[i]);  // Mensaje de error
+                perror("");
+                continue;       //Sale del bucle aqui y procesa la siguiente iteración
+            }
+            if (strcmp(pieces[1],"-long") == 0) {
+                time_t t = data.st_atim.tv_sec;         //Almacenamos la hora en segundos desde 1970
+                struct tm *tm_info = localtime(&t);
+                char buffer[26];
+                //Formatea la fecha y hora en una cadena
+                strftime(buffer, 26, "%Y/%m/%d-%H:%M", tm_info);
+                char* permissions = GetPermissions(data.st_mode);       //Permisos
+                //Propietario y grupo
+                struct passwd *pw = getpwuid(data.st_uid);
+                struct group *gr = getgrgid(data.st_gid);
+                printf("%s   %ld (%ld) %s %s %s %9ld %s\n",buffer,data.st_nlink,data.st_ino,pw->pw_name,gr->gr_name,permissions,data.st_size,pieces[i]);
+                free(permissions);
+            }else if (strcmp(pieces[1],"-acc") == 0) {
+                printf("%ld %s\n",data.st_size,pieces[i]);
+            }else if (strcmp(pieces[1],"-link") == 0) {
+                char link[LENGTH_MAX];
+                ssize_t linklen = readlink(pieces[i],link,LENGTH_MAX);
+                if(linklen == -1) {         //No tiene enlace simbólico
+                    printf("%ld %s\n",data.st_size,pieces[i]);
+                }else {
+                    link[linklen] = '\0';  // Añadimos terminador nulo
+                    printf("El enlace simbólico '%s' apunta a '%s'\n", pieces[i], link);
+                }
+            }else {
+                perror("Comando no válido, introduce \"help\" para ver los disponibles");
+            }
+        }
     }
 }
 
@@ -537,6 +586,105 @@ void command_cwd() {
         perror("Error obteniendo el directorio actual");
     }
 }
+
+
+/*listdir [-hid][-long][-link][-acc] n1 n2 ..	lista contenidos de directorios
+    -hid: incluye los ficheros ocultos, es como el acc pero con los hiden
+    -acc: acesstime
+    -link: si es enlace simbolico, el path contenido
+*/
+
+//Funcion auxiliar para obtener los datos de los archivos de un directorio
+bool GetFileData(bool hide,struct stat *data,char *dir,char* name) {
+    if (hide && (name[0] == '.' || strcmp(name, "..") == 0)) {
+        return false;
+    }
+    char filePath[LENGTH_MAX_INPUT];
+    snprintf(filePath,LENGTH_MAX_INPUT,"%s/%s",dir,name);
+    if (stat(filePath,data) == -1) {
+        fprintf(stderr, "Error al intentar acceder a %s: ", name);  // Mensaje de error
+        perror("");
+        return false;
+    }
+    return true;
+}
+
+//Si tiempo hacer un array de options y buscar la opcion con un for para luego elegir con el switch, además comprobar antes si exite pieces[1] que imprimir el directorio actual
+void command_listDir(char *pieces[]) {
+    if (pieces[2] == NULL) {
+        // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        char cwd[LENGTH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio actual: %s\n", cwd);
+        } else {
+            perror("Error obteniendo el directorio actual");
+        }
+    }else {
+        for (int i = 2; pieces[i] != NULL; i++) {
+            DIR *dir;
+            struct dirent *entry;
+            bool hide = true;
+
+            //Abrimos el directorio
+            dir = opendir(pieces[i]);
+            if (dir == NULL) {
+                fprintf(stderr, "Error al intentar acceder a %s: ", pieces[i]);  // Mensaje de error
+                perror("");
+                continue;       //Sale del bucle aqui y procesa la siguiente iteración
+            }
+            printf("************%s\n",pieces[i]);
+            if (strcmp(pieces[1],"-long") == 0) {
+                while ((entry = readdir(dir)) != NULL) {        //Obtiene la información de todos los archivos del directorio
+                    struct stat data;
+                    if (GetFileData(hide,&data,pieces[i],entry->d_name)) {
+                        time_t t = data.st_atim.tv_sec;         //Almacenamos la hora en segundos desde 1970
+                        struct tm *tm_info = localtime(&t);
+                        char buffer[26];
+                        //Formatea la fecha y hora en una cadena
+                        strftime(buffer, 26, "%Y/%m/%d-%H:%M", tm_info);
+                        char* permissions = GetPermissions(data.st_mode);       //Permisos
+                        //Propietario y grupo
+                        struct passwd *pw = getpwuid(data.st_uid);
+                        struct group *gr = getgrgid(data.st_gid);
+                        printf("%s   %ld (%ld) %s %s %s %9ld  %s\n",buffer,data.st_nlink,data.st_ino,pw->pw_name,gr->gr_name,permissions,data.st_size,entry->d_name);
+                        free(permissions);
+                    }
+                }
+            }else if (strcmp(pieces[1],"-acc") == 0) {
+                while ((entry = readdir(dir)) != NULL) {
+                    struct stat data;
+                    if (GetFileData(hide,&data,pieces[i],entry->d_name))
+                        printf("%9ld  %s\n",data.st_size,entry->d_name);
+                }
+            }else if (strcmp(pieces[1],"-link") == 0) {
+                while ((entry = readdir(dir)) != NULL) {
+                    struct stat data;
+                    if (GetFileData(hide,&data,pieces[i],entry->d_name)) {
+                        char link[LENGTH_MAX];
+                        ssize_t linklen = readlink(entry->d_name,link,LENGTH_MAX);
+                        if(linklen == -1) {         //No tiene enlace simbólico
+                            printf("%9ld  %s\n",data.st_size,entry->d_name);
+                        }else {
+                            link[linklen] = '\0';  // Añadimos terminador nulo
+                            printf("El enlace simbólico '%s' apunta a '%s'\n", entry->d_name, link);
+                        }
+                    }
+                }
+            }else if (strcmp(pieces[1],"-hid") == 0) {
+                hide = false;
+                while ((entry = readdir(dir)) != NULL) {
+                    struct stat data;
+                    if (GetFileData(hide,&data,pieces[i],entry->d_name))
+                        printf("%9ld  %s\n",data.st_size,entry->d_name);
+                }
+            }else {
+                perror("Comando no válido, introduce \"help\" para ver los disponibles");
+            }
+            closedir(dir);
+        }
+    }
+}
+
 
 void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime) {
     DIR *dir;
@@ -588,7 +736,7 @@ void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLon
         //maneja el caso de showLong, imprime los detalles largos
         if (showLong) {
             //modo (permisos y tipo de archivo)
-            char *permissions = ConvierteModo(fileStat.st_mode);
+            char *permissions = GetPermissions(fileStat.st_mode);
 
             //propietario y grupo
             struct passwd *pw = getpwuid(fileStat.st_uid);
@@ -628,7 +776,7 @@ void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLon
 }
 
 
-
+//Se puede fusionar con la reversa porque son iguales, si tiempo hacerlo
 
 //Intepreta los argumentos y llama a listDirectoryRecursively cpn los parametros adecuados
 void command_reclist(char *pieces[]) {
@@ -654,17 +802,149 @@ void command_reclist(char *pieces[]) {
         }
     }
 
-    //Si no se especifican directorios
+    //Si no se especifican directorios imprimimos el directorio actual, si te fijas en la de referencia hacen eso
     if (pieces[i] == NULL) {
-        fprintf(stderr, "Error: Debes especificar al menos un directorio\n");
-        return;
+        // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        char cwd[LENGTH_MAX_INPUT];
+        if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
+            printf("%s\n", cwd);
+        } else {
+            perror("Error obteniendo el directorio actual");
+        }
     }
-
     //Listar directorios recursivamente
     while (pieces[i] != NULL) {
         listDirectoryRecursively(pieces[i], showHidden, showLong, showLink, showAccessTime);
         i++;
     }
+}
+
+
+/*listrev [-hid][-long][-link][-acc] n1 n2 ..	lista recursivamente contenidos de directorios (subdirectorios antes
+    -hid: incluye los ficheros ocultos
+    -acc: acesstime
+    -link: si es enlace simbolico, el path contenido
+    listrev -long /home/pablojhd/Escritorio/SO/P01/cmake-build-debug*/
+
+//Perfecta, modulizar en todo caso
+
+void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
+    DIR *dir;
+    struct dirent *entry;
+    //se abre el directorio especidifcado por dirName
+    dir = opendir(dirName);
+    if (dir == NULL) {
+        fprintf(stderr, "Error al intentar acceder a %s: ", dirName);  // Mensaje de error
+        perror("");
+        return;
+    }
+
+    char fullPath[LENGTH_MAX_INPUT];
+    struct stat fileData;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if ((!showHidden && entry->d_name[0] == '.') || strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {       //No se les aplica ya que al leer este tipo de directorios e intentar acceder a los subdirectorios pueden provocar una recursión infinita al seguir llamando a la misma carpeta o a sus padres.
+            continue;  // Omitir archivos ocultos
+        }
+        snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", dirName, entry->d_name); //ruta completa del archivo
+        if (stat(fullPath, &fileData) == -1) {
+            fprintf(stderr, "Error al intentar acceder a %s: ", entry->d_name);  // Mensaje de error
+            perror("");
+            continue;
+        }
+        if (S_ISDIR(fileData.st_mode)) {
+            listDirectoryRecursivelyReverse(fullPath, showHidden, showLong, showLink, showAccessTime);
+        }
+    }
+
+    // Ahora que hemos recorrido recursivamente, volvemos a listar el contenido del directorio actual
+    rewinddir(dir);  // Volver al inicio del directorio para la segunda pasada (evitar cerrar/abrir)
+    printf("************%s\n", dirName);  // Imprimir el nombre del directorio
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (!showHidden && (entry->d_name[0] == '.' || strcmp(entry->d_name, "..") == 0)) {
+            continue;  // Omitir archivos ocultos y el propio directorio/parent
+        }
+
+        // Generar la ruta completa del archivo para luego pasársela a stat ya que si solo le pasamos el nombre no será capaz de acceder porque en ese momento no se encontrará en su directorio
+        snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", dirName, entry->d_name);
+
+        if (stat(fullPath, &fileData) == -1) {
+            printf("Error \n");
+            fprintf(stderr, "Error al intentar acceder a %s: ", entry->d_name);  // Mensaje de error
+            perror("");
+            continue;
+        }
+        // Mostrar información detallada si está habilitado
+        if (showLong) {
+            time_t t = fileData.st_atim.tv_sec;         //Almacenamos la hora en segundos desde 1970
+            struct tm *tm_info = localtime(&t);
+            char buffer[26];
+            strftime(buffer, 26, "%Y/%m/%d-%H:%M", tm_info);
+
+            char* permissions = GetPermissions(fileData.st_mode);  // Obtener permisos
+            struct passwd *pw = getpwuid(fileData.st_uid);  // Propietario
+            struct group *gr = getgrgid(fileData.st_gid);  // Grupo
+
+            printf("%s   %ld (%ld) %s %s %s %9ld  %s\n",buffer,fileData.st_nlink,fileData.st_ino,pw->pw_name,gr->gr_name,permissions,fileData.st_size,entry->d_name);
+
+            free(permissions);
+        }else if (showLink || showAccessTime)
+            printf("%9ld  %s\n",fileData.st_size,entry->d_name);
+        else {
+            char link[LENGTH_MAX];
+            ssize_t linklen = readlink(entry->d_name,link,LENGTH_MAX);
+            if(linklen == -1) {         //No tiene enlace simbólico
+                printf("%9ld  %s\n",fileData.st_size,entry->d_name);
+            }else {
+                link[linklen] = '\0';  // Añadimos terminador nulo
+                printf("El enlace simbólico '%s' apunta a '%s'\n", entry->d_name, link);
+            }
+        }
+    }
+
+    closedir(dir);  // Cerrar el directorio
+}
+
+
+
+void command_revlist(char *pieces[]) {
+        bool showHidden = false; //si se deben mostrar los archivos ocultos
+        bool showLong = false; //si se debe mostrar información detallada
+        bool showLink = false; //si se deben mostrar los enlaces simbólicos
+        bool showAccessTime = false; //si se deben mostrar las fechas de acceso
+        int i = 1;
+
+        //Analiza   las opciones
+        for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
+            if (strcmp(pieces[i], "-hid") == 0)
+                showHidden = true;
+            else if (strcmp(pieces[i], "-long") == 0)
+                showLong = true;
+            else if (strcmp(pieces[i], "-link") == 0)
+                showLink = true;
+            else if (strcmp(pieces[i], "-acc") == 0)
+                showAccessTime = true;
+            else {
+                fprintf(stderr, "Opción %s no reconocida:", pieces[i]);
+                perror("");
+                return;
+            }
+        }
+        if (pieces[i] == NULL) {
+            // Si no se especifica un directorio, imprime el directorio de trabajo actual
+            char cwd[LENGTH_MAX_INPUT];
+            if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
+                printf("%s\n", cwd);
+            } else {
+                perror("Error obteniendo el directorio actual");
+            }
+        }
+        //Listar directorios recursivamente
+        while (pieces[i] != NULL) {
+            listDirectoryRecursivelyReverse(pieces[i], showHidden, showLong, showLink, showAccessTime);
+            i++;
+        }
 }
 
 //Borra ficheros o directorios vacios
@@ -724,4 +1004,93 @@ void command_erase(char *pieces[]) {
     }
 }
 
+bool isDirectory(char *path) {
+    struct stat st;
+    if (stat(path, &st) == -1) {
+        fprintf(stderr, "Error al intentar acceder a %s: ", path);  // Mensaje de error
+        perror("");
+        return false;
+    }
+    return S_ISDIR(st.st_mode);
+}
 
+//delrec [name1 name2 ..]	Borra ficheros o directorios no vacios recursivamente
+
+//Acabar, devuelve un bool si ha podido borrar bien el directorio o fichero
+bool deleteRecursively(char *name) {
+    char fullPath[LENGTH_MAX_INPUT];
+    if (name[0] != '\0') {
+        char cwd[LENGTH_MAX_INPUT];
+        if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
+            snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", cwd, name);  // Construir la ruta completa
+        } else {
+            fprintf(stderr, "Error al intentar acceder a %s: ", cwd);  // Mensaje de error
+            perror("");
+            strcpy(fullPath, name);  // En caso de error, usar el nombre tal cual
+        }
+    }else
+        strcpy(fullPath, name);
+
+    if (isDirectory(fullPath)) {        // Si es un directorio, lo eliminamos recursivamente
+        DIR *dir = opendir(fullPath);
+        if (dir == NULL) {
+            fprintf(stderr, "Error al intentar acceder a %s: ", fullPath);  // Mensaje de error
+            perror("");
+            return false;
+        }
+
+        struct dirent *entry;
+        char subPath[LENGTH_MAX_INPUT];
+
+        // Leemos el contenido del directorio
+        while ((entry = readdir(dir)) != NULL) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            // Construimos la ruta completa de los archivos o subdirectorios
+            snprintf(subPath, LENGTH_MAX_INPUT, "%s/%s", fullPath, entry->d_name);
+
+            // Eliminamos recursivamente el contenido del directorio
+            if (!deleteRecursively(subPath)) {
+                closedir(dir);
+                return false;
+            }
+        }
+
+        closedir(dir);
+
+        // Una vez vacío, eliminamos el propio directorio
+        if (rmdir(fullPath) == -1) {
+            fprintf(stderr, "Error al eliminar directorio %s: ", fullPath);
+            perror("");
+            return false;
+        }
+    }else {         // Si es un archivo regular o un enlace simbólico, lo eliminamos
+        if (unlink(fullPath) == -1) {
+            fprintf(stderr, "Error al eliminar el archivo %s: ", name);  // Mensaje de error
+            perror("");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+void command_delrec (char *pieces[]){
+    if (pieces[1] == NULL) {
+        // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        char cwd[LENGTH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio actual: %s\n", cwd);
+        } else {
+            perror("Error obteniendo el directorio actual");
+        }
+    }else {
+        for (int i = 1; pieces[i] != NULL; ++i) {
+
+        }
+
+    }
+}
