@@ -102,7 +102,7 @@ int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,Histor
 }
 
 //Procesa el comando introducido
-void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
+void processInput(bool *finished,Item *str,char *pieces[],CommandList *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
         case 0:
             command_authors(pieces);
@@ -154,6 +154,7 @@ void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandL
         case 16:
             break;
         case 17:
+            command_erase(pieces);
             break;
         case 18:
             break;
@@ -540,47 +541,94 @@ void command_cwd() {
 void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime) {
     DIR *dir;
     struct dirent *entry;
+    struct stat fileStat;
+    char fullPath[1024];
 
-    //se abre el directorio especidifcado por dirName
+    //abre el directorio especificado por dirName
     dir = opendir(dirName);
     if (dir == NULL) {
         perror("Error al abrir el directorio");
         return;
     }
 
+    //imprime la cabecera del directorio
+    printf("************%s\n", dirName);
+
     while ((entry = readdir(dir)) != NULL) {
-        //Verifica si se deben mostrar archivos ocultos (que comienzan con .)
+        //verifica si se deben mostrar archivos ocultos (que comienzan con '.')
         if (!showHidden && entry->d_name[0] == '.') {
-            continue;  // Omitir archivos ocultos
+            continue;  //omitir archivos ocultos
         }
 
-        printf("Archivo: %s\n", entry->d_name);
+        //ruta completa del archivo
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", dirName, entry->d_name);
 
-        //si es showLong es true, se define una estructura stat para almacenar la información del archivo
-        if (showLong) {
-            struct stat fileStat;
-            char fullPath[1024];
-            snprintf(fullPath, sizeof(fullPath), "%s/%s", dirName, entry->d_name); //ruta completa del archivo
-
-            if (stat(fullPath, &fileStat) == 0) {
-                printf("Tamaño: %ld bytes\n", fileStat.st_size);
-                if (showAccessTime) {
-                    printf("Último acceso: %s", ctime(&fileStat.st_atime));
-                }
+        //maneja el caso de showLink: usa lstat si se requiere seguir enlaces simbólicos
+        if (showLink) {
+            if (lstat(fullPath, &fileStat) != 0) {  //lstat para manejar enlaces simbólicos
+                perror("Error en lstat");
+                continue;
+            }
+        } else {
+            if (stat(fullPath, &fileStat) != 0) {  //stat normal si no queremos manejar enlaces simbólicos
+                perror("Error en stat");
+                continue;
             }
         }
 
-        //Recursividad para subdirectorios
-        //si la entrada es un directorio y no es el actual o el padre, se construye la nueva ruta y se llama a la función recursivamente
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-            char newDir[1024];
-            snprintf(newDir, sizeof(newDir), "%s/%s", dirName, entry->d_name);
-            listDirectoryRecursively(newDir, showHidden, showLong, showLink, showAccessTime);
+        //maneja el caso de showAccessTime: imprime la fecha de acceso
+        if (showAccessTime) {
+            if (S_ISDIR(fileStat.st_mode)) {
+                printf("%10ld  %s\n", fileStat.st_size, entry->d_name);
+            } else {
+                printf("%10ld  %s\n", fileStat.st_size, entry->d_name);
+            }
+        }
+
+        //maneja el caso de showLong, imprime los detalles largos
+        if (showLong) {
+            //modo (permisos y tipo de archivo)
+            char *permissions = ConvierteModo(fileStat.st_mode);
+
+            //propietario y grupo
+            struct passwd *pw = getpwuid(fileStat.st_uid);
+            struct group *gr = getgrgid(fileStat.st_gid);
+
+            //fecha (última modificación)
+            char timebuf[80];
+            struct tm *timeinfo = localtime(&fileStat.st_mtime); // Última modificación
+            strftime(timebuf, sizeof(timebuf), "%Y/%m/%d-%H:%M", timeinfo);
+
+            //imprime en formato largo
+            printf("%s %ld (%7ld) %8s %8s %10ld %s %s\n",
+                   timebuf,               //Fecha y hora
+                   fileStat.st_nlink,     //Número de enlaces
+                   (long)fileStat.st_ino, //Número de inodo
+                   pw ? pw->pw_name : "-", //Propietario
+                   gr ? gr->gr_name : "-", //Grupo
+                   fileStat.st_size,      //Tamaño del archivo
+                   permissions,           //Permisos
+                   entry->d_name          //Nombre del archivo
+            );
+            free(permissions); //libera la memoria de los permisos
+
+        }else {
+            //imprime el nombre del archivo y el tamano si no es formato largo
+            printf("%10ld  %s\n", fileStat.st_size, entry->d_name);
+        }
+
+        //recursividad para subdirectorios (omitir '.' y '..')
+        if (S_ISDIR(fileStat.st_mode) && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            listDirectoryRecursively(fullPath, showHidden, showLong, showLink, showAccessTime);
         }
     }
+
     //cierra el directorio
     closedir(dir);
 }
+
+
+
 
 //Intepreta los argumentos y llama a listDirectoryRecursively cpn los parametros adecuados
 void command_reclist(char *pieces[]) {
@@ -590,7 +638,7 @@ void command_reclist(char *pieces[]) {
     bool showAccessTime = false; //si se deben mostrar las fechas de acceso
     int i = 1;
 
-    //Analiza   las opciones
+    //analiza las opciones
     for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
         if (strcmp(pieces[i], "-hid") == 0)
             showHidden = true;
@@ -614,9 +662,65 @@ void command_reclist(char *pieces[]) {
 
     //Listar directorios recursivamente
     while (pieces[i] != NULL) {
-        printf("***************%s\n", pieces[i]);
         listDirectoryRecursively(pieces[i], showHidden, showLong, showLink, showAccessTime);
         i++;
+    }
+}
+
+//Borra ficheros o directorios vacios
+void command_erase(char *pieces[]) {
+    struct stat fileStat;
+
+    // Recorre todos los argumentos que se pasan al comando
+    for (int i = 1; pieces[i] != NULL; i++) {  // Cambiado a verificar que pieces[i] no sea NULL
+        // Comprueba si el archivo o directorio existe
+        if (stat(pieces[i], &fileStat) == 0) {
+            // Si es un fichero regular, lo borra
+            if (S_ISREG(fileStat.st_mode)) {
+                if (unlink(pieces[i]) == 0) {
+                    printf("El fichero '%s' ha sido borrado.\n", pieces[i]);
+                } else {
+                    perror("Error al borrar el fichero");
+                }
+            }
+            // Si es un directorio y está vacío, intenta borrarlo
+            else if (S_ISDIR(fileStat.st_mode)) {
+                DIR *dir = opendir(pieces[i]);
+                if (dir == NULL) {
+                    perror("Error al abrir el directorio");
+                    continue;
+                }
+
+                struct dirent *entry;
+                int isEmpty = 1;  // Asume que el directorio está vacío
+
+                // Recorre el contenido del directorio para comprobar si está vacío
+                while ((entry = readdir(dir)) != NULL) {
+                    if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                        isEmpty = 0;  // El directorio no está vacío
+                        break;
+                    }
+                }
+
+                closedir(dir);
+
+                // Si el directorio está vacío, intenta eliminarlo
+                if (isEmpty) {
+                    if (rmdir(pieces[i]) == 0) {
+                        printf("El directorio vacío '%s' ha sido borrado.\n", pieces[i]);
+                    } else {
+                        perror("Error al borrar el directorio");
+                    }
+                } else {
+                    printf("El directorio '%s' no está vacío y no puede ser borrado.\n", pieces[i]);
+                }
+            } else {
+                printf("'%s' no es un fichero regular ni un directorio.\n", pieces[i]);
+            }
+        } else {
+            // Si no existe el archivo o directorio, muestra un mensaje de error
+            printf("El fichero o directorio '%s' no existe.\n", pieces[i]);
+        }
     }
 }
 
