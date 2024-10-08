@@ -15,7 +15,7 @@
 #define LENGTH_MAX_NAME 15
 #define LENGTH_MAX_DESCRIPTION 150
 
-#define LENGTH_MAX_LIST 4096
+#define LENGTH_MAX_LIST 25
 #define CNULL (-1)
 
 typedef struct {

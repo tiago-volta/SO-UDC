@@ -9,9 +9,17 @@
 
 #include "functions.h"
 
+#include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>  // Si usas funciones como `getpwuid`
+#include <grp.h>  // Si usas funciones como `getgrgid`
+
+
 //Imprime el prompt
 void printPrompt(){
     printf("→ ");
+    fflush(stdout);
 }
 
 //Funcion auxiliar para el read
@@ -27,7 +35,7 @@ int SplitString(char *str, char *pieces[]){
 
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList){
     char input[LENGTH_MAX_INPUT];
-    if (fgets(input,sizeof(input),stdin) != NULL) {
+    if (fgets(input,LENGTH_MAX_INPUT,stdin) != NULL) {
         char *trozos[LENGTH_MAX_INPUT];
         Item cadena;
         strcpy(cadena,input);       //Guardo una copia de la cadena en el historial
@@ -37,6 +45,9 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
         }
         int NumTrozos=SplitString(input,trozos);  //Splitea la cadena en trozos
         if (NumTrozos>0) {
+            for (int i = 0; trozos[i] != NULL; i++) {
+                printf("pieces[%d]: %s\n", i, trozos[i]);
+            }
             processInput(finished,&cadena,trozos,commandList,history,openFileList);
         }
     }else
@@ -1019,23 +1030,25 @@ bool isDirectory(char *path) {
 //Acabar, devuelve un bool si ha podido borrar bien el directorio o fichero
 bool deleteRecursively(char *name) {
     char fullPath[LENGTH_MAX_INPUT];
-    if (name[0] != '\0') {
+    // Determinar si la ruta es absoluta o relativa
+    if (name[0] == '/') {
+        // Ruta absoluta
+        strncpy(fullPath, name, LENGTH_MAX_INPUT - 1);
+        fullPath[LENGTH_MAX_INPUT - 1] = '\0';  // Asegurar terminación nula
+    } else {
+        // Ruta relativa: obtener el directorio actual y concatenar
         char cwd[LENGTH_MAX_INPUT];
-        if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
-            snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", cwd, name);  // Construir la ruta completa
-        } else {
-            fprintf(stderr, "Error al intentar acceder a %s: ", cwd);  // Mensaje de error
-            perror("");
-            strcpy(fullPath, name);  // En caso de error, usar el nombre tal cual
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {
+            fprintf(stderr, "Error al obtener el directorio actual: %s",strerror(errno));
+            return false;
         }
-    }else
-        strcpy(fullPath, name);
+        snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", cwd, name);
+    }
 
     if (isDirectory(fullPath)) {        // Si es un directorio, lo eliminamos recursivamente
         DIR *dir = opendir(fullPath);
         if (dir == NULL) {
-            fprintf(stderr, "Error al intentar acceder a %s: ", fullPath);  // Mensaje de error
-            perror("");
+            fprintf(stderr, "Error al intentar acceder a %s: %s\n", fullPath,strerror(errno));  // Mensaje de error
             return false;
         }
 
@@ -1062,14 +1075,13 @@ bool deleteRecursively(char *name) {
 
         // Una vez vacío, eliminamos el propio directorio
         if (rmdir(fullPath) == -1) {
-            fprintf(stderr, "Error al eliminar directorio %s: ", fullPath);
-            perror("");
+            fprintf(stderr, "Error al eliminar directorio %s: %s", fullPath,strerror(errno)); //errno almacena el código de error de la última operación que falló.
             return false;
         }
     }else {         // Si es un archivo regular o un enlace simbólico, lo eliminamos
         if (unlink(fullPath) == -1) {
-            fprintf(stderr, "Error al eliminar el archivo %s: ", name);  // Mensaje de error
-            perror("");
+            fprintf(stderr, "Error al eliminar el archivo %s: %s", name,strerror(errno));  // Mensaje de error
+            fflush(stdout);
             return false;
         }
     }
@@ -1083,14 +1095,15 @@ void command_delrec (char *pieces[]){
         // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
-            printf("Directorio actual: %s\n", cwd);
+            printf("%s\n", cwd);
         } else {
-            perror("Error obteniendo el directorio actual");
+            fprintf(stderr, "Error al obtener el directorio actual: %s",strerror(errno));
         }
     }else {
         for (int i = 1; pieces[i] != NULL; ++i) {
-
+            if(deleteRecursively(pieces[i])) {
+                printf("%s eliminado\n", pieces[i]);    //No ponerlo en la final
+            }
         }
-
     }
 }

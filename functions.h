@@ -28,7 +28,7 @@
 #include "HistoryList.h"
 #include "FileList.h"
 
-#define LENGTH_MAX_INPUT 512
+#define LENGTH_MAX_INPUT 256
 
 void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);

@@ -14,7 +14,7 @@
 
 #define MAX 4096  //Tamaño máximo del array en la implementación estática
 #define HNULL (-1) //Constante para indicar la posición nula o lista vacia
-#define LENGTH_MAX 100
+#define LENGTH_MAX 256
 
 typedef int Pos;
 typedef char Item[LENGTH_MAX];
