@@ -10,10 +10,6 @@
 #include "functions.h"
 
 #include <errno.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <pwd.h>  // Si usas funciones como `getpwuid`
-#include <grp.h>  // Si usas funciones como `getgrgid`
 
 
 //Imprime el prompt
@@ -23,7 +19,7 @@ void printPrompt(){
 }
 
 //Funcion auxiliar para el read
-int SplitString(char *str, char *pieces[]){
+static int SplitString(char *str, char *pieces[]){
     int i=1;
     if ((pieces[0]=strtok(str," \n\t"))==NULL)
         return 0;
@@ -45,16 +41,13 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
         }
         int NumTrozos=SplitString(input,trozos);  //Splitea la cadena en trozos
         if (NumTrozos>0) {
-            for (int i = 0; trozos[i] != NULL; i++) {
-                printf("pieces[%d]: %s\n", i, trozos[i]);
-            }
             processInput(finished,&cadena,trozos,commandList,history,openFileList);
         }
     }else
         perror ("Error al leer la entrada");
 }
 
-
+//Puedo hacerla privada?? y como
 void PredefinedCommands(CommandList *commandList) {
     const char *names[] = {
         "authors", "pid", "ppid", "cd", "date",
@@ -102,13 +95,13 @@ void PredefinedCommands(CommandList *commandList) {
 }
 
 //Función auxiliar para guardar en el historial
-void AddToHistoryList(Item *command,HistoryList *lista){
+static void AddToHistoryList(Item *command,HistoryList *lista){
     Item *newItem = command;
     insertCommand(newItem,HNULL,lista);
 }
 
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
-int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,HistoryList *history) {
+static int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,HistoryList *history) {
     for (int i=0; i<commandList->total ;i++) {
         if(strcmp(commandList->commands[i].name,pieces[0]) == 0){
             AddToHistoryList(str,history);                  //Se guarda en el historial
@@ -118,7 +111,7 @@ int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,Histor
     return -1;
 }
 
-//Procesa el comando introducido
+//Procesa el comando introducido //Se puede hacer privada??
 void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
         case 0:
@@ -261,7 +254,7 @@ void command_date(char *pieces[]) {
 }
 
 //Funcion auxiliar para repetir un comando guardado en el historial
-void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+static void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
     char *trozos[LENGTH_MAX];
     Item cadena;
     Item *comando = getItem(p, history);
@@ -391,13 +384,7 @@ void command_infosys() {
         perror("Error al obtener la información del sistema");
         return;
     }
-
-    printf("Información del sistema:\n");
-    printf("Nombre del sistema operativo: %s\n", sysinfo.sysname);
-    printf("Nombre del nodo: %s\n", sysinfo.nodename);
-    printf("Versión del sistema operativo: %s\n", sysinfo.release);
-    printf("Versión del kernel: %s\n", sysinfo.version);
-    printf("Arquitectura del hardware: %s\n", sysinfo.machine);
+    printf("%s (%s), OS: %s - %s - %s \n",sysinfo.nodename,sysinfo.machine,sysinfo.sysname,sysinfo.release,sysinfo.version);
 }
 
 //Comando que muestra los comandos disponibles
@@ -458,7 +445,7 @@ void command_makefile(char *pieces[]) {
 
 }
 
-char LetraTF (mode_t m){
+static char LetraTF (mode_t m){
     switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
         case S_IFSOCK: return 's'; /*socket */
         case S_IFLNK: return 'l'; /*symbolic link*/
@@ -471,7 +458,7 @@ char LetraTF (mode_t m){
     }
 }
 
-char *GetPermissions(mode_t m) {
+static char *GetPermissions(mode_t m) {
     char *permisos;
 
     if ((permisos=(char *) malloc (12))==NULL)
@@ -606,7 +593,7 @@ void command_cwd() {
 */
 
 //Funcion auxiliar para obtener los datos de los archivos de un directorio
-bool GetFileData(bool hide,struct stat *data,char *dir,char* name) {
+static bool GetFileData(bool hide,struct stat *data,char *dir,char* name) {
     if (hide && (name[0] == '.' || strcmp(name, "..") == 0)) {
         return false;
     }
@@ -697,7 +684,7 @@ void command_listDir(char *pieces[]) {
 }
 
 
-void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime) {
+static void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime) {
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
@@ -839,7 +826,7 @@ void command_reclist(char *pieces[]) {
 
 //Perfecta, modulizar en todo caso
 
-void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
+static void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
     DIR *dir;
     struct dirent *entry;
     //se abre el directorio especidifcado por dirName
@@ -1015,7 +1002,7 @@ void command_erase(char *pieces[]) {
     }
 }
 
-bool isDirectory(char *path) {
+static bool isDirectory(char *path) {
     struct stat st;
     if (stat(path, &st) == -1) {
         fprintf(stderr, "Error al intentar acceder a %s: ", path);  // Mensaje de error
@@ -1028,7 +1015,7 @@ bool isDirectory(char *path) {
 //delrec [name1 name2 ..]	Borra ficheros o directorios no vacios recursivamente
 
 //Acabar, devuelve un bool si ha podido borrar bien el directorio o fichero
-bool deleteRecursively(char *name) {
+static bool deleteRecursively(char *name) {
     char fullPath[LENGTH_MAX_INPUT];
     // Determinar si la ruta es absoluta o relativa
     if (name[0] == '/') {
