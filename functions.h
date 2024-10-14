@@ -34,6 +34,7 @@ void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
 void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList);
 void PredefinedCommands(CommandList *commandList);
+void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, bool *showAccessTime, int *i);
 
 void command_authors(char * pieces[]);
 void command_pid();

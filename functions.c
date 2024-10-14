@@ -1,6 +1,6 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
+ * SUBTITLE: Practica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
@@ -786,35 +786,31 @@ void listDirectoryRecursively(const char *dirName, bool showHidden, bool showLon
     closedir(dir);
 }
 
-
-//Se puede fusionar con la reversa porque son iguales, si tiempo hacerlo
-
-//Intepreta los argumentos y llama a listDirectoryRecursively cpn los parametros adecuados
-void command_reclist(char *pieces[]) {
-    bool showHidden = false; //si se deben mostrar los archivos ocultos
-    bool showLong = false; //si se debe mostrar información detallada
-    bool showLink = false; //si se deben mostrar los enlaces simbólicos
-    bool showAccessTime = false; //si se deben mostrar las fechas de acceso
-    int i = 1;
+void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, bool *showAccessTime, int *i) {
+     *showHidden = false; //si se deben mostrar los archivos ocultos
+     *showLong = false; //si se debe mostrar información detallada
+     *showLink = false; //si se deben mostrar los enlaces simbólicos
+     *showAccessTime = false; //si se deben mostrar las fechas de acceso
+     *i = 1;
 
     //analiza las opciones
-    for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
-        if (strcmp(pieces[i], "-hid") == 0)
-            showHidden = true;
-        else if (strcmp(pieces[i], "-long") == 0)
-            showLong = true;
-        else if (strcmp(pieces[i], "-link") == 0)
-            showLink = true;
-        else if (strcmp(pieces[i], "-acc") == 0)
-            showAccessTime = true;
+    for (; pieces[*i] != NULL && pieces[*i][0] == '-'; i++) {
+        if (strcmp(pieces[*i], "-hid") == 0)
+            *showHidden = true;
+        else if (strcmp(pieces[*i], "-long") == 0)
+            *showLong = true;
+        else if (strcmp(pieces[*i], "-link") == 0)
+            *showLink = true;
+        else if (strcmp(pieces[*i], "-acc") == 0)
+            *showAccessTime = true;
         else {
-            fprintf(stderr, "Opción no reconocida: %s\n", pieces[i]);
+            fprintf(stderr, "Opción no reconocida: %s\n", pieces[*i]);
             return;
         }
     }
 
     //Si no se especifican directorios imprimimos el directorio actual, si te fijas en la de referencia hacen eso
-    if (pieces[i] == NULL) {
+    if (pieces[*i] == NULL) {
         // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX_INPUT];
         if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
@@ -823,6 +819,15 @@ void command_reclist(char *pieces[]) {
             perror("Error obteniendo el directorio actual");
         }
     }
+}
+
+
+//Intepreta los argumentos y llama a listDirectoryRecursively con los parametros adecuados
+void command_reclist(char *pieces[]) {
+    bool showHidden, showLong, showLink, showAccessTime;
+    int i;
+    options(pieces, &showHidden, &showLong, &showLink, &showAccessTime, &i);
+
     //Listar directorios recursivamente
     while (pieces[i] != NULL) {
         listDirectoryRecursively(pieces[i], showHidden, showLong, showLink, showAccessTime);
@@ -920,37 +925,10 @@ void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool 
 
 
 void command_revlist(char *pieces[]) {
-        bool showHidden = false; //si se deben mostrar los archivos ocultos
-        bool showLong = false; //si se debe mostrar información detallada
-        bool showLink = false; //si se deben mostrar los enlaces simbólicos
-        bool showAccessTime = false; //si se deben mostrar las fechas de acceso
-        int i = 1;
+    bool showHidden, showLong, showLink, showAccessTime;
+    int i;
+    options(pieces, &showHidden, &showLong, &showLink, &showAccessTime, &i);
 
-        //Analiza   las opciones
-        for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
-            if (strcmp(pieces[i], "-hid") == 0)
-                showHidden = true;
-            else if (strcmp(pieces[i], "-long") == 0)
-                showLong = true;
-            else if (strcmp(pieces[i], "-link") == 0)
-                showLink = true;
-            else if (strcmp(pieces[i], "-acc") == 0)
-                showAccessTime = true;
-            else {
-                fprintf(stderr, "Opción %s no reconocida:", pieces[i]);
-                perror("");
-                return;
-            }
-        }
-        if (pieces[i] == NULL) {
-            // Si no se especifica un directorio, imprime el directorio de trabajo actual
-            char cwd[LENGTH_MAX_INPUT];
-            if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
-                printf("%s\n", cwd);
-            } else {
-                perror("Error obteniendo el directorio actual");
-            }
-        }
         //Listar directorios recursivamente
         while (pieces[i] != NULL) {
             listDirectoryRecursivelyReverse(pieces[i], showHidden, showLong, showLink, showAccessTime);
