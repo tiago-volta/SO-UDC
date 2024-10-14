@@ -688,7 +688,6 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
-    char fullPath[1024];
 
     //abre el directorio especificado por dirName
     dir = opendir(dirName);
@@ -701,6 +700,7 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
     printf("************%s\n", dirName);
 
     while ((entry = readdir(dir)) != NULL) {
+        char fullPath[1024];
         //verifica si se deben mostrar archivos ocultos (que comienzan con '.')
         if (!showHidden && entry->d_name[0] == '.') {
             continue;  //omitir archivos ocultos
@@ -774,14 +774,14 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
 }
 
 void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, bool *showAccessTime, int *i) {
-     *showHidden = false; //si se deben mostrar los archivos ocultos
-     *showLong = false; //si se debe mostrar información detallada
-     *showLink = false; //si se deben mostrar los enlaces simbólicos
-     *showAccessTime = false; //si se deben mostrar las fechas de acceso
-     *i = 1;
+    *showHidden = false;  // si se deben mostrar los archivos ocultos
+    *showLong = false;    // si se debe mostrar información detallada
+    *showLink = false;    // si se deben mostrar los enlaces simbólicos
+    *showAccessTime = false;  // si se deben mostrar las fechas de acceso
+    *i = 1;
 
-    //analiza las opciones
-    for (; pieces[*i] != NULL && pieces[*i][0] == '-'; i++) {
+    // analiza las opciones
+    for (; pieces[*i] != NULL && pieces[*i][0] == '-'; (*i)++) {  // incrementa i correctamente
         if (strcmp(pieces[*i], "-hid") == 0)
             *showHidden = true;
         else if (strcmp(pieces[*i], "-long") == 0)
@@ -796,17 +796,18 @@ void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, b
         }
     }
 
-    //Si no se especifican directorios imprimimos el directorio actual, si te fijas en la de referencia hacen eso
+    // Si no se especifican directorios, asigna el directorio actual
     if (pieces[*i] == NULL) {
-        // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX_INPUT];
         if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
-            printf("%s\n", cwd);
+            pieces[*i] = strdup(cwd);  // asigna el directorio actual a pieces[i]
+            pieces[*i + 1] = NULL;     // marca el final de las piezas
         } else {
             perror("Error obteniendo el directorio actual");
         }
     }
 }
+
 
 
 //Intepreta los argumentos y llama a listDirectoryRecursively con los parametros adecuados
@@ -829,7 +830,6 @@ void command_reclist(char *pieces[]) {
     -link: si es enlace simbolico, el path contenido
     listrev -long /home/pablojhd/Escritorio/SO/P01/cmake-build-debug*/
 
-//Perfecta, modulizar en todo caso
 
 static void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
     DIR *dir;
