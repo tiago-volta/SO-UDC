@@ -1,3 +1,12 @@
+/*
+ * TITLE: Sistemas Operativos
+ * SUBTITLE: Practica 0
+ * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
+ * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
+ * GROUP: 2.3
+ * DATE: 27 / 09 / 24
+ */
+
 #include "functions.h"
 
 #include <errno.h>
@@ -24,8 +33,14 @@ static int SplitString(char *str, char *pieces[]){
     return i;
 }
 
+//Función auxiliar para guardar en el historial
+static void AddToHistoryList(tItemH *command,HistoryList *lista){
+    tItemH *newItem = command;
+    insertCommandH(newItem,lista);
+}
 
-void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList){
+
+void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList){
     char input[LENGTH_MAX_INPUT];
     if (fgets(input,LENGTH_MAX_INPUT,stdin) != NULL) {
         char *trozos[LENGTH_MAX_INPUT];
@@ -44,7 +59,7 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
 }
 
 //Debería de poner los comandos aquí en una función que los devuelva con sus descripciones y luego inicializar la lista de comandos con una función del TAD?
-void InsertPredefinedCommands(CommandList *commandList) {
+void InsertPredefinedCommands(CommandListC *commandList) {
    const char *Names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
@@ -52,7 +67,6 @@ void InsertPredefinedCommands(CommandList *commandList) {
         "reclist", "revlist", "erase", "delrec",
         "help", "quit", "exit", "bye"
     };
-
     const char *Descriptions[] = {
         " [-n|-l] Muestra los nombres y/o logins de los autores",
         " [-p] Muestra el pid del shell o de su proceso padre",
@@ -78,17 +92,17 @@ void InsertPredefinedCommands(CommandList *commandList) {
         "\t-long: listado largo \n"
         "\t-acc: acesstime \n"
         "\t-link: si es enlace simbolico, el path contenido ",
-        "cwd Muestra el directorio actual del shell",
+        "Muestra el directorio actual del shell",
         " [-hid][-long][-link][-acc] n1 n2 .. lista contenidos de directorios \n"
         "\t-long: listado largo \n"
         "\t-hid: incluye los ficheros ocultos \n"
         "\t-acc: acesstime \n"
-        "\t-link: si es enlace simbolico, el path contenido ",
+        "\t-link: si es enlace simbolico, el path contenido",
         " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs despues) \n"
         "\t-hid: incluye los ficheros ocultos \n"
         "\t-long: listado largo \n"
         "\t-acc: acesstime \n"
-        "\t-link: si es enlace simbolico, el path contenido ",
+        "\t-link: si es enlace simbolico, el path contenido",
         " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs antes) \n"
         "\t-hid: incluye los ficheros ocultos \n"
         "\t-long: listado largo \n"
@@ -96,11 +110,9 @@ void InsertPredefinedCommands(CommandList *commandList) {
         "\t-link: si es enlace simbolico, el path contenido ",
         " [name1 name2 ..] Borra ficheros o directorios vacios",
         " [name1 name2 ..] Borra ficheros o directorios no vacios recursivamente",
-        " [cmd|-lt|-T|-all]	Muestra ayuda sobre los comandos \n"
-        "\t-lt: lista topics de ayuda \n"
-        "\t-T topic: lista comandos sobre ese topic \n"
-        "cmd: info sobre el comando cmd \n"
-        "\t-all: lista todos los topics con sus comandos ",
+        " [cmd|-all]	Muestra ayuda sobre los comandos \n"
+        "\t-cmd: info sobre el comando cmd \n"
+        "\t-all: lista todos los comandos con su información ",
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell"
@@ -108,7 +120,6 @@ void InsertPredefinedCommands(CommandList *commandList) {
 
     // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     int NumComandos = sizeof(Names) / sizeof(Names[0]);
-
     // Copiamos los valores en el struct CommandList
     for (int i = 0; i < NumComandos; i++) {
         if (!insertCommandC(commandList,Names[i],Descriptions[i],i))
@@ -116,14 +127,9 @@ void InsertPredefinedCommands(CommandList *commandList) {
     }
 }
 
-//Función auxiliar para guardar en el historial
-static void AddToHistoryList(tItemH *command,HistoryList *lista){
-    tItemH *newItem = command;
-    insertCommandH(newItem,lista);
-}
 
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
-static int getCmdIdAndHistory (tItemH *str,char *pieces[],CommandList *commandList,HistoryList *history) {
+static int getCommandId (tItemH *str,char *pieces[],CommandListC *commandList,HistoryList *history) {
     int id = FindCommandC(commandList,pieces[0]);
     if (id != CNULL) {
         AddToHistoryList(str,history);
@@ -133,38 +139,75 @@ static int getCmdIdAndHistory (tItemH *str,char *pieces[],CommandList *commandLi
 }
 
 //Procesa el comando introducido //Se puede hacer privada??
-void processInput(bool *finished, tItemH *str, char *pieces[], CommandList *commandList, HistoryList *history, OpenFileList *fileList) {
-    int cmdId = getCmdIdAndHistory(str, pieces, commandList, history);
-
-    switch (cmdId) {
-        case 0: command_authors(pieces); break;
-        case 1: command_pid(); break;
-        case 2: command_ppid(); break;
-        case 3: command_cd(pieces); break;
-        case 4: command_date(pieces); break;
-        case 5: command_historic(pieces, finished, commandList, history, fileList); break;
-        case 6: command_open(pieces, fileList); break;
-        case 7: command_close(pieces, fileList); break;
-        case 8: command_dup(pieces, fileList); break;
-        case 9: command_infosys(); break;
-        case 10: command_makefile(pieces); break;
-        case 11: command_makedir(pieces); break;
-        case 12: command_listFile(pieces); break;
-        case 13: command_cwd(); break;
-        case 14: command_listDir(pieces); break;
-        case 15: command_reclist(pieces); break;
-        case 16: command_revlist(pieces); break;
-        case 17: command_erase(pieces); break;
-        case 18: command_delrec(pieces); break;
-        case 19: command_help(pieces, commandList); break;
+void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList){
+    switch (getCommandId(str,pieces,commandList,history)) {
+        case 0:
+            command_authors(pieces);
+            break;
+        case 1:
+            command_pid();
+            break;
+        case 2:
+            command_ppid();
+            break;
+        case 3:
+            command_cd(pieces);
+            break;
+        case 4:
+            command_date(pieces);
+            break;
+        case 5:
+            command_historic(pieces,finished,commandList,history,fileList);
+            break;
+        case 6:
+            command_open(pieces,fileList);
+            break;
+        case 7:
+            command_close(pieces,fileList);
+            break;
+        case 8:
+            command_dup(pieces,fileList);
+            break;
+        case 9:
+            command_infosys();
+            break;
+        case 10:
+            command_makefile(pieces);
+            break;
+        case 11:
+            command_makedir(pieces);
+            break;
+        case 12:
+            command_listFile(pieces);
+            break;
+        case 13:
+            command_cwd();
+            break;
+        case 14:
+            command_listDir(pieces);
+            break;
+        case 15:
+            command_reclist(pieces);
+            break;
+        case 16:
+            command_revlist(pieces);
+            break;
+        case 17:
+            command_erase(pieces);
+            break;
+        case 18:
+            command_delrec(pieces);
+            break;
+        case 19:
+            command_help(pieces,commandList);
+            break;
         case 20:
         case 21:
         case 22:
-            command_exit(finished, fileList, history, commandList);
-        break;
+            command_exit(finished,fileList,history,commandList);
+            break;
         default:
-            printf("Comando no válido, introduce \"help\" para ver los disponibles\n");
-        break;
+            perror("Comando no válido, introduce \"help\" para ver los disponibles");
     }
 }
 
@@ -237,43 +280,43 @@ void command_date(char *pieces[]) {
 }
 
 //Funcion auxiliar para repetir un comando guardado en el historial
-static void repeatCommand(tPosH p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+static void repeatCommand(tPosH p,bool *finished, CommandListC *commandList, HistoryList *history, OpenFileList *openFileList){
     char *trozos[LENGTH_MAX];
     tItemH cadena;
     tItemH *comando = getItemH(p, history);
+    printf("Ejecutando historic (%d): %s\n",p,*comando);
     strcpy(cadena,*comando);
     SplitString(*comando,trozos);
     processInput(finished,&cadena,trozos,commandList,history,openFileList);
 }
 
 //Mustra el historial de comandos introducidos, o repite un comando ya introducido o imprimer los últimos n comandos
-void command_historic (char *pieces[],bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList) {
+void command_historic (char *pieces[],bool *finished,CommandListC *commandList, HistoryList *history, OpenFileList *openFileList) {
     char *NoValidCharacter;
     if (pieces[1] != NULL) {
         const long int n = strtol(pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
-            if(*NoValidCharacter == '\0') {
-                if (0 <= number && number <= lastH(*history)) {
-                    repeatCommand(number,finished,commandList,history,openFileList);
-                }else if (number < 0) {
-                    number = -number;       //Cambiar el signo
-                    printLastNH(history,number);
-                }else
-                    perror("No se han ejecutado comandos suficientes");
-            }else if(NoValidCharacter == pieces[1]) {
-                perror("No se introdujo ningún número válido.\n");
-            }else{
-                printf("Parte de la cadena no es válida: %s\n", NoValidCharacter);
-                printf("Parte numérica leída: %d\n", number);
-                if (0 <= number && number <= lastH(*history)) {
-                    repeatCommand(number,finished,commandList,history,openFileList);
-                }else if (number < 0) {
-                    number = -number;       //Cambiar el signo
-                    printLastNH(history,number);
-                }else
-                    perror("No se han ejecutado comandos suficientes");
+        if(*NoValidCharacter == '\0') {
+            if (0 <= number && number <= lastH(*history)) {
+                repeatCommand(number,finished,commandList,history,openFileList);
+            }else if (number < 0) {
+                number = -number;       //Cambiar el signo
+                printLastNH(history,number);
+            }else
+                perror("No se han ejecutado comandos suficientes");
+        }else if(NoValidCharacter == pieces[1]) {
+            perror("No se introdujo ningún número válido.\n");
+        }else{
+            printf("Parte de la cadena no es válida: %s\n", NoValidCharacter);
+            printf("Parte numérica leída: %d\n", number);
+            if (0 <= number && number <= lastH(*history)) {
+                repeatCommand(number,finished,commandList,history,openFileList);
+            }else if (number < 0) {
+                number = -number;       //Cambiar el signo
+                printLastNH(history,number);
+            }else
+                perror("No se han ejecutado comandos suficientes");
             }
-
     }else {
         printListH(history);
     }
@@ -342,17 +385,18 @@ void command_dup(char *pieces[], OpenFileList *openFileList) {
         printListF(*openFileList);  // Lista los archivos abiertos
         return;
     }
-
+    printf("pieces[1]: %s\n", pieces[1]);
     // Duplica el descriptor
     if ((duplicated = dup(df)) == -1) {
         perror("Imposible duplicar descriptor");
         return;
     }
-
     // Obtiene el nombre del archivo asociado con el descriptor original
-    p = getItemF(findFile(df,*openFileList),*openFileList).name;
+    p = getItemF(findFile(df,*openFileList)).name;
     // Prepara una cadena para mostrar la información del duplicado
-    snprintf(aux, MAXNAME, "dup %d (%s)", df, p);
+    if (snprintf(aux, MAXNAME, "dup %d (%s)", df, p) >= sizeof(aux)) {
+        fprintf(stderr, "Error: El mensaje a imprimir fue truncado.\n");
+    }
     item = defineItem(df,fcntl(duplicated, F_GETFL),aux);
     if(insertItemF(item,openFileList))                  // Añade el nuevo descriptor duplicado a la lista de archivos abiertos
         printf("Archivo duplicado: descriptor %d, archivo %s, modo %d\n", df, pieces[1], fcntl(duplicated, F_GETFL));
@@ -372,13 +416,17 @@ void command_infosys() {
 }
 
 //Comando que muestra los comandos disponibles
-void command_help(char * pieces[], CommandList *commandList) {
+void command_help(char * pieces[], CommandListC *commandList) {
     if (pieces[1] != NULL) {
-        for (int i=0; i<commandList->total ;i++) {
-            if(strcmp(commandList->commands[i]->name,pieces[1]) == 0) {
-                printf("%s %s\n", commandList->commands[i]->name,commandList->commands[i]->description);
-                return;
-            }
+        if (strcmp(pieces[1],"-all") == 0) {
+            printCommandDescriptionListC(*commandList);
+            return;
+        }
+        int pos = FindCommandC(commandList,pieces[1]);
+        if(pos != CNULL) {
+            tCommandC command= getCommandC(pos,*commandList);
+            printf("%s %s\n", command.name,command.description);
+            return;
         }
         perror("Comando no válido, introduce ""help"" para ver los disponibles");
     }else{
@@ -387,10 +435,10 @@ void command_help(char * pieces[], CommandList *commandList) {
 }
 
 //Comando que limpia todas las listas, cierra los archivos y finaliza el programa
-void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList) {
+void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandListC *commandList) {
     // Cierra todos los archives abiertos
-    for (tPosF i = firstF(*openFileList); i != FNULL; i = nextF(*openFileList, i)) {
-        if (close(getItemF(i,*openFileList).df) == -1) {
+    for (tPosF i = firstF(*openFileList); i != FNULL; i = nextF(i)) {
+        if (close(getItemF(i).df) == -1) {
             perror("Error al cerrar el archivo");
         }
     }
@@ -1078,5 +1126,3 @@ void command_delrec (char *pieces[]){
         }
     }
 }
-
-

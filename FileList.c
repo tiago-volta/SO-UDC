@@ -38,7 +38,7 @@ tPosF lastF(OpenFileList L){
     return p;
 }
 
-tPosF nextF(tPosF p, OpenFileList L){                                   //Devuelve el nodo al que apunta el campo next de la variable introducida
+tPosF nextF(tPosF p){                                   //Devuelve el nodo al que apunta el campo next de la variable introducida
     return p->next;
 }
 
@@ -60,7 +60,7 @@ bool insertItemF(tItemF d, OpenFileList *L) {                   //Se pasa por re
 
 tPosF findFile(const int df,OpenFileList L) {
     tPosF p;
-    if (!isEmptyList(L)) {
+    if (isEmptyList(L)) {
         p = FNULL;
     } else {
         for (p = L; p != NULL && p->data.df != df; p = p->next);
@@ -79,7 +79,7 @@ tItemF defineItem(const int df, const int mode, const char *name) {
 
 
 // Función para obtener el nombre de un fichero por su descriptor
-tItemF getItemF(tPosF p, OpenFileList L){
+tItemF getItemF(tPosF p){
     return p->data;                                    //Devuelve el campo data de la posicion p
 }
 

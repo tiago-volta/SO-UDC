@@ -29,24 +29,25 @@
 #include "FileList.h"
 
 #define LENGTH_MAX_INPUT 256
+#define LENGTH_MAX_OUTPUT 256
 
 void printPrompt();
-void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
-void processInput(bool *finished,tItemH *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList);
-void InsertPredefinedCommands(CommandList *commandList);
+void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList);
+void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList);
+void InsertPredefinedCommands(CommandListC *commandList);
 
 void command_authors(char * pieces[]);
 void command_pid();
 void command_ppid();
 void command_cd(char *pieces[]);
 void command_date(char *pieces[]);
-void command_historic (char *pieces[],bool *finished,CommandList *commandList, HistoryList *history, OpenFileList *openFileList);
+void command_historic (char *pieces[],bool *finished,CommandListC *commandList, HistoryList *history, OpenFileList *openFileList);
 void command_open(char *pieces[],OpenFileList *openFileList);
 void command_close(char *pieces[],OpenFileList *openFileList);
 void command_dup(char *pieces[], OpenFileList *openFileList);
 void command_infosys();
-void command_help(char * pieces[], CommandList *commandList);
-void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList);
+void command_help(char * pieces[], CommandListC *commandList);
+void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandListC *commandList);
 
 void command_makefile(char *pieces[]);
 void command_makedir(char *pieces[]);

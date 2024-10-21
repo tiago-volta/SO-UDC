@@ -49,7 +49,7 @@ void printListH(HistoryList *L) {
         printf("La lista de historial está vacía.\n");
         return;
     }
-    printf("\nHistory List:\n");
+    printf("History List:\n");
     for (int i = 0; i <= L->lastPos; i++) {
         printf("%d: %s\n", i, *L->data[i]);
     }

@@ -13,7 +13,7 @@
 
 int main(void){
     bool finished = false;
-    CommandList cmdList;
+    CommandListC cmdList;
     HistoryList historyList;
     OpenFileList openFileList;
     createEmptyListC(&cmdList);
