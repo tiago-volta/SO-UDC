@@ -60,47 +60,47 @@ void InsertPredefinedCommands(CommandList *commandList) {
         " [dir]	Cambia (o muestra) el directorio actual del shell",
         " [-d|-t] Muestra la fecha y/o la hora actual",
         " [-c|-N|N]	Muestra (o borra)el historico de comandos \n"
-        "-N: muestra los N primeros \n"
-        "-c: borra el historico \n"
-        "N: repite el comando N",
+        "\t-N: muestra los N primeros \n"
+        "\t-c: borra el historico \n"
+        "\tN: repite el comando N",
         " fich m1 m2...	Abre el fichero fich y lo anade a la lista de ficheros abiertos del shell \n"
-        "m1, m2..es el modo de apertura (or bit a bit de los siguientes) \n"
-        "cr: O_CREAT	ap: O_APPEND \n"
-        "ex: O_EXCL 	ro: O_RDONLY \n"
-        "rw: O_RDWR 	wo: O_WRONLY \n"
-        "tr: O_TRUNC ",
+        "\tm1, m2..es el modo de apertura (or bit a bit de los siguientes) \n"
+        "\tcr: O_CREAT	ap: O_APPEND \n"
+        "\tex: O_EXCL 	ro: O_RDONLY \n"
+        "\trw: O_RDWR 	wo: O_WRONLY \n"
+        "\ttr: O_TRUNC ",
         " df Cierra el descriptor df y elimina el correspondiente fichero de la lista de ficheros abiertos",
         " df Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos",
         " Muestra informacion de la maquina donde corre el shell",
         " [name] Crea un fichero de nombre name",
         " [name]	Crea un directorio de nombre name",
         " [-long][-link][-acc] name1 name2 ..	lista ficheros; \n"
-        "-long: listado largo \n"
-        "-acc: acesstime \n"
-        "-link: si es enlace simbolico, el path contenido ",
+        "\t-long: listado largo \n"
+        "\t-acc: acesstime \n"
+        "\t-link: si es enlace simbolico, el path contenido ",
         "cwd Muestra el directorio actual del shell",
         " [-hid][-long][-link][-acc] n1 n2 .. lista contenidos de directorios \n"
-        "-long: listado largo \n"
-        "-hid: incluye los ficheros ocultos \n"
-        "-acc: acesstime \n"
-        "-link: si es enlace simbolico, el path contenido ",
+        "\t-long: listado largo \n"
+        "\t-hid: incluye los ficheros ocultos \n"
+        "\t-acc: acesstime \n"
+        "\t-link: si es enlace simbolico, el path contenido ",
         " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs despues) \n"
-        "-hid: incluye los ficheros ocultos \n"
-        "-long: listado largo \n"
-        "-acc: acesstime \n"
-        "-link: si es enlace simbolico, el path contenido ",
+        "\t-hid: incluye los ficheros ocultos \n"
+        "\t-long: listado largo \n"
+        "\t-acc: acesstime \n"
+        "\t-link: si es enlace simbolico, el path contenido ",
         " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs antes) \n"
-        "-hid: incluye los ficheros ocultos \n"
-        "-long: listado largo \n"
-        "-acc: acesstime \n"
-        "-link: si es enlace simbolico, el path contenido ",
+        "\t-hid: incluye los ficheros ocultos \n"
+        "\t-long: listado largo \n"
+        "\t-acc: acesstime \n"
+        "\t-link: si es enlace simbolico, el path contenido ",
         " [name1 name2 ..] Borra ficheros o directorios vacios",
         " [name1 name2 ..] Borra ficheros o directorios no vacios recursivamente",
         " [cmd|-lt|-T|-all]	Muestra ayuda sobre los comandos \n"
-        "-lt: lista topics de ayuda \n"
-        "-T topic: lista comandos sobre ese topic \n"
+        "\t-lt: lista topics de ayuda \n"
+        "\t-T topic: lista comandos sobre ese topic \n"
         "cmd: info sobre el comando cmd \n"
-        "-all: lista todos los topics con sus comandos ",
+        "\t-all: lista todos los topics con sus comandos ",
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell"
