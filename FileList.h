@@ -13,31 +13,41 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-#define MAXFILES 100
 #define MAXNAME 25
-#define FNULL (-1)
+#define FNULL NULL
+
 
 //Estructura para almacenar los ficheros abiertos
 typedef struct{
     int df;             //Descriptor de un archivo
     int mode;           //Modo en que se abrió el archivo
-    char name[MAXNAME];
-} OpenFile;
+    char name[MAXNAME];                     //La lista de canciones de cada usuario está implementada de forma estática
+} tItemF;
 
-// Estructura para gestionar la lista de ficheros abiertos
-typedef struct {
-    OpenFile files[MAXFILES];
-    int numOpenFiles;
-} OpenFileList;
+typedef struct tNode* tPosF;
+typedef tPosF OpenFileList;
+
+// Estructura para almacenar un file
+struct tNode{
+    tItemF data;
+    tPosF next;
+};
 
 //Declaraciones de funciones
-void InitializeOpenFileList(OpenFileList *list);
-char* GetFileName(OpenFileList *list,const int df);
-void ListOpenFiles(OpenFileList *list);
-void AddToOpenFiles(OpenFileList *list, const int df, const int mode, const char *name);
-void RemoveFromOpenFiles(OpenFileList *list, int df);
-void CleanOpenFilesList(OpenFileList *list);
+void createEmptyListF(OpenFileList *L);
+bool isEmptyList(OpenFileList L);
+tPosF firstF(OpenFileList L);
+tPosF lastF(OpenFileList L);
+tPosF nextF(tPosF p, OpenFileList L);
+bool insertItemF(tItemF d, OpenFileList *L);
+tPosF findFile(const int df,OpenFileList L);
+tItemF defineItem(const int df, const int mode, const char *name);
+tItemF getItemF(tPosF p, OpenFileList L);
+void deleteOpenFileAtPositionF(tPosF p,OpenFileList *L);
+void CleanListF(OpenFileList *L);
+void printListF(OpenFileList L);
 
 
 

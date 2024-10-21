@@ -32,9 +32,8 @@
 
 void printPrompt();
 void readInput(bool *finished, CommandList *commandList, HistoryList *history,OpenFileList *openFileList);
-void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList);
-void PredefinedCommands(CommandList *commandList);
-void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, bool *showAccessTime, int *i);
+void processInput(bool *finished,tItemH *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList);
+void InsertPredefinedCommands(CommandList *commandList);
 
 void command_authors(char * pieces[]);
 void command_pid();
@@ -46,7 +45,7 @@ void command_open(char *pieces[],OpenFileList *openFileList);
 void command_close(char *pieces[],OpenFileList *openFileList);
 void command_dup(char *pieces[], OpenFileList *openFileList);
 void command_infosys();
-void command_help(char * pieces[],CommandList *commandList);
+void command_help(char * pieces[], CommandList *commandList);
 void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList);
 
 void command_makefile(char *pieces[]);

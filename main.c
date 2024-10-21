@@ -9,14 +9,17 @@
 
 #include "functions.h"
 
+//Las listas se inicializan todas aqui??
+
 int main(void){
     bool finished = false;
     CommandList cmdList;
     HistoryList historyList;
     OpenFileList openFileList;
-    PredefinedCommands(&cmdList);
-    createEmptyList(&historyList);
-    InitializeOpenFileList(&openFileList);
+    createEmptyListC(&cmdList);
+    InsertPredefinedCommands(&cmdList);
+    createEmptyListH(&historyList);
+    createEmptyListF(&openFileList);
     while (!finished) {
         printPrompt();
         readInput(&finished,&cmdList,&historyList,&openFileList);

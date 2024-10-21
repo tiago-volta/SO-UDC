@@ -1,6 +1,6 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 1
+ * SUBTITLE: Practica 0
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
@@ -10,7 +10,12 @@
 #include "functions.h"
 
 #include <errno.h>
-
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 
 //Imprime el prompt
 void printPrompt(){
@@ -33,7 +38,7 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
     char input[LENGTH_MAX_INPUT];
     if (fgets(input,LENGTH_MAX_INPUT,stdin) != NULL) {
         char *trozos[LENGTH_MAX_INPUT];
-        Item cadena;
+        tItemH cadena;
         strcpy(cadena,input);       //Guardo una copia de la cadena en el historial
         size_t len = strlen(cadena);
         if (len > 0 && cadena[len - 1] == '\n') {
@@ -47,17 +52,17 @@ void readInput(bool *finished, CommandList *commandList, HistoryList *history,Op
         perror ("Error al leer la entrada");
 }
 
-//Puedo hacerla privada?? y como
-void PredefinedCommands(CommandList *commandList) {
-    const char *names[] = {
+//Debería de poner los comandos aquí en una función que los devuelva con sus descripciones y luego inicializar la lista de comandos con una función del TAD?
+void InsertPredefinedCommands(CommandList *commandList) {
+   const char *Names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
-        "makefile","makedir","listfile","cwd","listdir",
-        "reclist", "revlist","erase","delrec",
+        "makefile", "makedir", "listfile", "cwd", "listdir",
+        "reclist", "revlist", "erase", "delrec",
         "help", "quit", "exit", "bye"
     };
 
-    const char *descriptions[] = {
+    const char *Descriptions[] = {
         "Prints the names and logins of the program authors. authors -l prints only the logins. authors -n prints only the names.",
         "Prints the pid of the process executing the shell.",
         "Prints the pid of the shell’s parent process.",
@@ -72,11 +77,11 @@ void PredefinedCommands(CommandList *commandList) {
         "Creates a new directory with the specified name. makedir dirname creates a new directory.",
         "Lists the files in the current directory or the specified directory. listfile lists all files, with options for details.",
         "Prints the current working directory of the shell.",
-        "Lists directories contents",
+        "Lists directories contents.",
         "Lists directories recursively (subdirectories after).",
         "Lists directories recursively (subdirectories before).",
         "Deletes files and/or empty directories.",
-        "Deletes files and/pr non empty directories recursively.",
+        "Deletes files and/or non-empty directories recursively.",
         "help displays a list of available commands. help cmd gives a brief help on the usage of command cmd.",
         "Ends the shell.",
         "Ends the shell.",
@@ -84,35 +89,33 @@ void PredefinedCommands(CommandList *commandList) {
     };
 
     // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
-    commandList->total = sizeof(names) / sizeof(names[0]);
+    int NumComandos = sizeof(Names) / sizeof(Names[0]);
 
     // Copiamos los valores en el struct CommandList
-    for (int i = 0; i < commandList->total; i++) {
-        strncpy(commandList->commands[i].name, names[i], LENGTH_MAX_NAME - 1);
-        strncpy(commandList->commands[i].description, descriptions[i], LENGTH_MAX_DESCRIPTION - 1);
-        commandList->commands[i].ID = i;  // Asignar un ID único de cada comando
+    for (int i = 0; i < NumComandos; i++) {
+        if (!insertCommandC(commandList,Names[i],Descriptions[i],i))
+            perror ("Error insertando los comandos predefinidos");
     }
 }
 
 //Función auxiliar para guardar en el historial
-static void AddToHistoryList(Item *command,HistoryList *lista){
-    Item *newItem = command;
-    insertCommand(newItem,HNULL,lista);
+static void AddToHistoryList(tItemH *command,HistoryList *lista){
+    tItemH *newItem = command;
+    insertCommandH(newItem,lista);
 }
 
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
-static int getCmdIdAndHistory (Item *str,char *pieces[],CommandList *commandList,HistoryList *history) {
-    for (int i=0; i<commandList->total ;i++) {
-        if(strcmp(commandList->commands[i].name,pieces[0]) == 0){
-            AddToHistoryList(str,history);                  //Se guarda en el historial
-            return commandList->commands[i].ID;
-        }
+static int getCmdIdAndHistory (tItemH *str,char *pieces[],CommandList *commandList,HistoryList *history) {
+    int id = FindCommandC(commandList,pieces[0]);
+    if (id != CNULL) {
+        AddToHistoryList(str,history);
+        return id;
     }
     return -1;
 }
 
 //Procesa el comando introducido //Se puede hacer privada??
-void processInput(bool *finished,Item *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
+void processInput(bool *finished,tItemH *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
         case 0:
             command_authors(pieces);
@@ -254,10 +257,10 @@ void command_date(char *pieces[]) {
 }
 
 //Funcion auxiliar para repetir un comando guardado en el historial
-static void repeatCommand(Pos p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
+static void repeatCommand(tPosH p,bool *finished, CommandList *commandList, HistoryList *history, OpenFileList *openFileList){
     char *trozos[LENGTH_MAX];
-    Item cadena;
-    Item *comando = getItem(p, history);
+    tItemH cadena;
+    tItemH *comando = getItemH(p, history);
     strcpy(cadena,*comando);
     SplitString(*comando,trozos);
     processInput(finished,&cadena,trozos,commandList,history,openFileList);
@@ -270,11 +273,11 @@ void command_historic (char *pieces[],bool *finished,CommandList *commandList, H
         const long int n = strtol(pieces[1],&NoValidCharacter,10);         //Variable para almacenar el n si lo hay
         int number = (int) n;
             if(*NoValidCharacter == '\0') {
-                if (0 <= number && number <= history->lastPos) {
+                if (0 <= number && number <= lastH(*history)) {
                     repeatCommand(number,finished,commandList,history,openFileList);
                 }else if (number < 0) {
                     number = -number;       //Cambiar el signo
-                    printLastN(history,number);
+                    printLastNH(history,number);
                 }else
                     perror("No se han ejecutado comandos suficientes");
             }else if(NoValidCharacter == pieces[1]) {
@@ -282,17 +285,17 @@ void command_historic (char *pieces[],bool *finished,CommandList *commandList, H
             }else{
                 printf("Parte de la cadena no es válida: %s\n", NoValidCharacter);
                 printf("Parte numérica leída: %d\n", number);
-                if (0 <= number && number <= history->lastPos) {
+                if (0 <= number && number <= lastH(*history)) {
                     repeatCommand(number,finished,commandList,history,openFileList);
                 }else if (number < 0) {
                     number = -number;       //Cambiar el signo
-                    printLastN(history,number);
+                    printLastNH(history,number);
                 }else
                     perror("No se han ejecutado comandos suficientes");
             }
 
     }else {
-        printList(history);
+        printListH(history);
     }
 }
 
@@ -302,7 +305,7 @@ void command_open(char *pieces[],OpenFileList *openFileList) {
 
     // Si no se especificó un archivo, listar los archivos abiertos
     if (pieces[1] == NULL) {
-        ListOpenFiles(openFileList);  // Lista los archivos abiertos
+        printListF(*openFileList);  // Lista los archivos abiertos
         return;
     }
 
@@ -322,8 +325,9 @@ void command_open(char *pieces[],OpenFileList *openFileList) {
     if ((df = open(pieces[1], mode, 0777)) == -1) {
         perror("Imposible abrir archivo");
     } else {
-        AddToOpenFiles(openFileList,df, mode, pieces[1]);  // Añade el archivo a la lista de archivos abiertos
-        printf("Archivo abierto: descriptor %d, archivo %s, modo %d\n", df, pieces[1], mode);
+        tItemF item = defineItem(df,mode,pieces[1]);
+        if(insertItemF(item,openFileList))          // Añade el archivo a la lista de archivos abiertos
+            printf("Archivo abierto: descriptor %d, archivo %s, modo %d\n", df, pieces[1], mode);
     }
 }
 
@@ -333,7 +337,7 @@ void command_close(char *pieces[],OpenFileList *openFileList) {
 
     // Si no se especifica un descriptor o el descriptor es menor que 0, listar los archivos abiertos
     if (pieces[1] == NULL || (df = atoi(pieces[1])) < 0) {
-        ListOpenFiles(openFileList);  // Lista los archivos abiertos
+        printListF(*openFileList);  // Lista los archivos abiertos
         return;
     }
 
@@ -341,7 +345,8 @@ void command_close(char *pieces[],OpenFileList *openFileList) {
     if (close(df) == -1) {
         perror("Imposible cerrar archivo");
     } else {
-        RemoveFromOpenFiles(openFileList,df);  // Elimina el archivo de la lista de archivos abiertos
+        tPosF p= findFile(df,*openFileList);  // Elimina el archivo de la lista de archivos abiertos
+        deleteOpenFileAtPositionF(p,openFileList);
         printf("Archivo cerrado: descriptor %d, archivo %s\n", df, pieces[1]);
     }
 }
@@ -350,10 +355,11 @@ void command_close(char *pieces[],OpenFileList *openFileList) {
 void command_dup(char *pieces[], OpenFileList *openFileList) {
     int df, duplicated;
     char aux[MAXNAME], *p;
+    tItemF item;
 
     // Si no hay un descriptor válido, lista los archivos abiertos
     if (pieces[1] == NULL || (df = atoi(pieces[1])) < 0) {
-        ListOpenFiles(openFileList);  // Lista los archivos abiertos
+        printListF(*openFileList);  // Lista los archivos abiertos
         return;
     }
 
@@ -364,14 +370,12 @@ void command_dup(char *pieces[], OpenFileList *openFileList) {
     }
 
     // Obtiene el nombre del archivo asociado con el descriptor original
-    p = GetFileName(openFileList,df);
-
+    p = getItemF(findFile(df,*openFileList),*openFileList).name;
     // Prepara una cadena para mostrar la información del duplicado
     snprintf(aux, MAXNAME, "dup %d (%s)", df, p);
-
-    // Añade el nuevo descriptor duplicado a la lista de archivos abiertos
-    AddToOpenFiles(openFileList,duplicated, fcntl(duplicated, F_GETFL), aux);
-    printf("Archivo duplicado: descriptor %d, archivo %s, modo %d\n", df, pieces[1], fcntl(duplicated, F_GETFL));
+    item = defineItem(df,fcntl(duplicated, F_GETFL),aux);
+    if(insertItemF(item,openFileList))                  // Añade el nuevo descriptor duplicado a la lista de archivos abiertos
+        printf("Archivo duplicado: descriptor %d, archivo %s, modo %d\n", df, pieces[1], fcntl(duplicated, F_GETFL));
 
 }
 
@@ -388,32 +392,32 @@ void command_infosys() {
 }
 
 //Comando que muestra los comandos disponibles
-void command_help(char * pieces[],CommandList *commandList) {
+void command_help(char * pieces[], CommandList *commandList) {
     if (pieces[1] != NULL) {
         for (int i=0; i<commandList->total ;i++) {
-            if(strcmp(commandList->commands[i].name,pieces[1]) == 0) {
-                printf("%s: %s\n", commandList->commands[i].name,commandList->commands[i].description);
+            if(strcmp(commandList->commands[i]->name,pieces[1]) == 0) {
+                printf("%s: %s\n", commandList->commands[i]->name,commandList->commands[i]->description);
                 return;
             }
         }
         perror("Comando no válido, introduce ""help"" para ver los disponibles");
     }else{
-        printCommandList(*commandList);
+        printCommandListC(*commandList);
     }
 }
 
 //Comando que limpia todas las listas, cierra los archivos y finaliza el programa
 void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandList *commandList) {
     // Cierra todos los archives abiertos
-    for (int i = 0; i < openFileList->numOpenFiles; i++) {
-        if (close(openFileList->files[i].df) == -1) {
+    for (tPosF i = firstF(*openFileList); i != FNULL; i = nextF(*openFileList, i)) {
+        if (close(getItemF(i,*openFileList).df) == -1) {
             perror("Error al cerrar el archivo");
         }
     }
     // Limpiamos las listas utilizadas en el programa
-    CleanCommandList(commandList);
-    CleanOpenFilesList(openFileList);
-    clearHistoryList(history);
+    CleanCommandListC(commandList);
+    CleanListF(openFileList);
+    CleanListH(history);
 
     // Establece una bandera para indicar que la shell debe terminar
     *finished = true;
@@ -688,6 +692,7 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
     DIR *dir;
     struct dirent *entry;
     struct stat fileStat;
+    char fullPath[LENGTH_MAX_INPUT];
 
     //abre el directorio especificado por dirName
     dir = opendir(dirName);
@@ -700,7 +705,6 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
     printf("************%s\n", dirName);
 
     while ((entry = readdir(dir)) != NULL) {
-        char fullPath[1024];
         //verifica si se deben mostrar archivos ocultos (que comienzan con '.')
         if (!showHidden && entry->d_name[0] == '.') {
             continue;  //omitir archivos ocultos
@@ -773,49 +777,43 @@ static void listDirectoryRecursively(const char *dirName, bool showHidden, bool 
     closedir(dir);
 }
 
-void options(char *pieces[], bool *showHidden, bool *showLong, bool *showLink, bool *showAccessTime, int *i) {
-    *showHidden = false;  // si se deben mostrar los archivos ocultos
-    *showLong = false;    // si se debe mostrar información detallada
-    *showLink = false;    // si se deben mostrar los enlaces simbólicos
-    *showAccessTime = false;  // si se deben mostrar las fechas de acceso
-    *i = 1;
 
-    // analiza las opciones
-    for (; pieces[*i] != NULL && pieces[*i][0] == '-'; (*i)++) {  // incrementa i correctamente
-        if (strcmp(pieces[*i], "-hid") == 0)
-            *showHidden = true;
-        else if (strcmp(pieces[*i], "-long") == 0)
-            *showLong = true;
-        else if (strcmp(pieces[*i], "-link") == 0)
-            *showLink = true;
-        else if (strcmp(pieces[*i], "-acc") == 0)
-            *showAccessTime = true;
+//Se puede fusionar con la reversa porque son iguales, si tiempo hacerlo
+
+//Intepreta los argumentos y llama a listDirectoryRecursively cpn los parametros adecuados
+void command_reclist(char *pieces[]) {
+    bool showHidden = false; //si se deben mostrar los archivos ocultos
+    bool showLong = false; //si se debe mostrar información detallada
+    bool showLink = false; //si se deben mostrar los enlaces simbólicos
+    bool showAccessTime = false; //si se deben mostrar las fechas de acceso
+    int i = 1;
+
+    //analiza las opciones
+    for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
+        if (strcmp(pieces[i], "-hid") == 0)
+            showHidden = true;
+        else if (strcmp(pieces[i], "-long") == 0)
+            showLong = true;
+        else if (strcmp(pieces[i], "-link") == 0)
+            showLink = true;
+        else if (strcmp(pieces[i], "-acc") == 0)
+            showAccessTime = true;
         else {
-            fprintf(stderr, "Opción no reconocida: %s\n", pieces[*i]);
+            fprintf(stderr, "Opción no reconocida: %s\n", pieces[i]);
             return;
         }
     }
 
-    // Si no se especifican directorios, asigna el directorio actual
-    if (pieces[*i] == NULL) {
+    //Si no se especifican directorios imprimimos el directorio actual, si te fijas en la de referencia hacen eso
+    if (pieces[i] == NULL) {
+        // Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX_INPUT];
         if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
-            pieces[*i] = strdup(cwd);  // asigna el directorio actual a pieces[i]
-            pieces[*i + 1] = NULL;     // marca el final de las piezas
+            printf("%s\n", cwd);
         } else {
             perror("Error obteniendo el directorio actual");
         }
     }
-}
-
-
-
-//Intepreta los argumentos y llama a listDirectoryRecursively con los parametros adecuados
-void command_reclist(char *pieces[]) {
-    bool showHidden, showLong, showLink, showAccessTime;
-    int i;
-    options(pieces, &showHidden, &showLong, &showLink, &showAccessTime, &i);
-
     //Listar directorios recursivamente
     while (pieces[i] != NULL) {
         listDirectoryRecursively(pieces[i], showHidden, showLong, showLink, showAccessTime);
@@ -830,6 +828,7 @@ void command_reclist(char *pieces[]) {
     -link: si es enlace simbolico, el path contenido
     listrev -long /home/pablojhd/Escritorio/SO/P01/cmake-build-debug*/
 
+//Perfecta, modulizar en todo caso
 
 static void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
     DIR *dir;
@@ -912,10 +911,37 @@ static void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden
 
 
 void command_revlist(char *pieces[]) {
-    bool showHidden, showLong, showLink, showAccessTime;
-    int i;
-    options(pieces, &showHidden, &showLong, &showLink, &showAccessTime, &i);
+        bool showHidden = false; //si se deben mostrar los archivos ocultos
+        bool showLong = false; //si se debe mostrar información detallada
+        bool showLink = false; //si se deben mostrar los enlaces simbólicos
+        bool showAccessTime = false; //si se deben mostrar las fechas de acceso
+        int i = 1;
 
+        //Analiza   las opciones
+        for (; pieces[i] != NULL && pieces[i][0] == '-'; i++) {
+            if (strcmp(pieces[i], "-hid") == 0)
+                showHidden = true;
+            else if (strcmp(pieces[i], "-long") == 0)
+                showLong = true;
+            else if (strcmp(pieces[i], "-link") == 0)
+                showLink = true;
+            else if (strcmp(pieces[i], "-acc") == 0)
+                showAccessTime = true;
+            else {
+                fprintf(stderr, "Opción %s no reconocida:", pieces[i]);
+                perror("");
+                return;
+            }
+        }
+        if (pieces[i] == NULL) {
+            // Si no se especifica un directorio, imprime el directorio de trabajo actual
+            char cwd[LENGTH_MAX_INPUT];
+            if (getcwd(cwd, LENGTH_MAX_INPUT) != NULL) {
+                printf("%s\n", cwd);
+            } else {
+                perror("Error obteniendo el directorio actual");
+            }
+        }
         //Listar directorios recursivamente
         while (pieces[i] != NULL) {
             listDirectoryRecursivelyReverse(pieces[i], showHidden, showLong, showLink, showAccessTime);

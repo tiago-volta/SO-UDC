@@ -11,7 +11,11 @@
 #define COMMANDLIST_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include<stdbool.h>
 
+//Implementar como estática de punteros
 #define LENGTH_MAX_NAME 15
 #define LENGTH_MAX_DESCRIPTION 150
 
@@ -25,13 +29,15 @@ typedef struct {
 }Command;
 
 typedef struct {
-    Command commands[LENGTH_MAX_LIST];
+    Command *commands[LENGTH_MAX_LIST];
     int total;
 }CommandList;
 
-void printCommandList(CommandList list);
-void CleanCommandList(CommandList *list);
-
+void createEmptyListC(CommandList *list);
+void printCommandListC(CommandList list);
+void CleanCommandListC(CommandList *list);
+bool insertCommandC(CommandList *list, const char name[LENGTH_MAX_NAME], const char description[LENGTH_MAX_DESCRIPTION], const int ID);
+int FindCommandC(CommandList *list, const char name[LENGTH_MAX_NAME]);
 
 
 #endif //COMMANDLIST_H

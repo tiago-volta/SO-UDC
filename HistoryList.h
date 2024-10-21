@@ -16,26 +16,28 @@
 #define HNULL (-1) //Constante para indicar la posición nula o lista vacia
 #define LENGTH_MAX 256
 
-typedef int Pos;
-typedef char Item[LENGTH_MAX];
+typedef int tPosH;
+typedef char tItemH[LENGTH_MAX];
 
 typedef struct{
-    Item data [MAX];
-    Pos lastPos;
+    tItemH *data [MAX];
+    tPosH lastPos;
 }HistoryList;
 
 
-void createEmptyList(HistoryList *L);
+void createEmptyListH(HistoryList *L);
 
-bool insertCommand(Item *d, Pos p, HistoryList *L);
+bool insertCommandH(tItemH *d, HistoryList *L);
 
-Item *getItem(Pos p, HistoryList *L);
+tItemH *getItemH(tPosH p, HistoryList *L);
 
-void printList(HistoryList *L);
+void printListH(HistoryList *L);
 
-void printLastN (HistoryList *L, int n);
+void printLastNH (HistoryList *L, const int n);
 
-void clearHistoryList(HistoryList *L);
+void CleanListH(HistoryList *L);
+
+tPosH lastH(HistoryList L);
 
 
 #endif //HISTORYLIST_H
