@@ -1,12 +1,3 @@
-/*
- * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
- * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
- * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
- * GROUP: 2.3
- * DATE: 27 / 09 / 24
- */
-
 #include "functions.h"
 
 #include <errno.h>
@@ -63,29 +54,56 @@ void InsertPredefinedCommands(CommandList *commandList) {
     };
 
     const char *Descriptions[] = {
-        "Prints the names and logins of the program authors. authors -l prints only the logins. authors -n prints only the names.",
-        "Prints the pid of the process executing the shell.",
-        "Prints the pid of the shell’s parent process.",
-        "Changes the current working directory of the shell to dir. Without arguments it prints the current working directory.",
-        "Prints the current date and the current time. date -d Prints only the current date. date -t Prints only the current time.",
-        "Shows the history of commands executed by this shell. historic N repeats command number N. historic -N prints only the last N commands.",
-        "open without arguments lists the shell open files. open file, opens a file and adds it to the list of shell open files.",
-        "Closes the df file descriptor and eliminates the corresponding item from the list.",
-        "Duplicates the df file descriptor creating the corresponding new entry on the file list.",
-        "Prints information on the machine running the shell.",
-        "Creates a new file with the specified name. makefile filename creates a new empty file.",
-        "Creates a new directory with the specified name. makedir dirname creates a new directory.",
-        "Lists the files in the current directory or the specified directory. listfile lists all files, with options for details.",
-        "Prints the current working directory of the shell.",
-        "Lists directories contents.",
-        "Lists directories recursively (subdirectories after).",
-        "Lists directories recursively (subdirectories before).",
-        "Deletes files and/or empty directories.",
-        "Deletes files and/or non-empty directories recursively.",
-        "help displays a list of available commands. help cmd gives a brief help on the usage of command cmd.",
-        "Ends the shell.",
-        "Ends the shell.",
-        "Ends the shell."
+        " [-n|-l] Muestra los nombres y/o logins de los autores",
+        " [-p] Muestra el pid del shell o de su proceso padre",
+        " Muestra el pid del proceso padre del shell",
+        " [dir]	Cambia (o muestra) el directorio actual del shell",
+        " [-d|-t] Muestra la fecha y/o la hora actual",
+        " [-c|-N|N]	Muestra (o borra)el historico de comandos \n"
+        "-N: muestra los N primeros \n"
+        "-c: borra el historico \n"
+        "N: repite el comando N",
+        " fich m1 m2...	Abre el fichero fich y lo anade a la lista de ficheros abiertos del shell \n"
+        "m1, m2..es el modo de apertura (or bit a bit de los siguientes) \n"
+        "cr: O_CREAT	ap: O_APPEND \n"
+        "ex: O_EXCL 	ro: O_RDONLY \n"
+        "rw: O_RDWR 	wo: O_WRONLY \n"
+        "tr: O_TRUNC ",
+        " df Cierra el descriptor df y elimina el correspondiente fichero de la lista de ficheros abiertos",
+        " df Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos",
+        " Muestra informacion de la maquina donde corre el shell",
+        " [name] Crea un fichero de nombre name",
+        " [name]	Crea un directorio de nombre name",
+        " [-long][-link][-acc] name1 name2 ..	lista ficheros; \n"
+        "-long: listado largo \n"
+        "-acc: acesstime \n"
+        "-link: si es enlace simbolico, el path contenido ",
+        "cwd Muestra el directorio actual del shell",
+        " [-hid][-long][-link][-acc] n1 n2 .. lista contenidos de directorios \n"
+        "-long: listado largo \n"
+        "-hid: incluye los ficheros ocultos \n"
+        "-acc: acesstime \n"
+        "-link: si es enlace simbolico, el path contenido ",
+        " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs despues) \n"
+        "-hid: incluye los ficheros ocultos \n"
+        "-long: listado largo \n"
+        "-acc: acesstime \n"
+        "-link: si es enlace simbolico, el path contenido ",
+        " [-hid][-long][-link][-acc] n1 n2 .. lista recursivamente contenidos de directorios (subdirs antes) \n"
+        "-hid: incluye los ficheros ocultos \n"
+        "-long: listado largo \n"
+        "-acc: acesstime \n"
+        "-link: si es enlace simbolico, el path contenido ",
+        " [name1 name2 ..] Borra ficheros o directorios vacios",
+        " [name1 name2 ..] Borra ficheros o directorios no vacios recursivamente",
+        " [cmd|-lt|-T|-all]	Muestra ayuda sobre los comandos \n"
+        "-lt: lista topics de ayuda \n"
+        "-T topic: lista comandos sobre ese topic \n"
+        "cmd: info sobre el comando cmd \n"
+        "-all: lista todos los topics con sus comandos ",
+        " Termina la ejecucion del shell",
+        " Termina la ejecucion del shell",
+        " Termina la ejecucion del shell"
     };
 
     // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
@@ -115,76 +133,38 @@ static int getCmdIdAndHistory (tItemH *str,char *pieces[],CommandList *commandLi
 }
 
 //Procesa el comando introducido //Se puede hacer privada??
-void processInput(bool *finished,tItemH *str,char *pieces[], CommandList *commandList, HistoryList *history,OpenFileList *fileList){
-    switch (getCmdIdAndHistory(str,pieces,commandList,history)) {
-        case 0:
-            command_authors(pieces);
-            break;
-        case 1:
-            command_pid();
-            break;
-        case 2:
-            command_ppid();
-            break;
-        case 3:
-            command_cd(pieces);
-            break;
-        case 4:
-            command_date(pieces);
-            break;
-        case 5:
-            command_historic(pieces,finished,commandList,history,fileList);
-            break;
-        case 6:
-            command_open(pieces,fileList);
-            break;
-        case 7:
-            command_close(pieces,fileList);
-            break;
-        case 8:
-            command_dup(pieces,fileList);
-            break;
-        case 9:
-            command_infosys();
-            break;
-        case 10:
-            command_makefile(pieces);
-            break;
-        case 11:
-            command_makedir(pieces);
-            break;
-        case 12:
-            command_listFile(pieces);
-            break;
-        case 13:
-            command_cwd();
-            break;
-        case 14:
-            command_listDir(pieces);
-            break;
-        case 15:
-            command_reclist(pieces);
-            break;
-        case 16:
-            command_revlist(pieces);
-            break;
-        case 17:
-            command_erase(pieces);
-            break;
-        case 18:
-            command_delrec(pieces);
-            break;
-        case 19:
-            command_help(pieces,commandList);
-            break;
+void processInput(bool *finished, tItemH *str, char *pieces[], CommandList *commandList, HistoryList *history, OpenFileList *fileList) {
+    int cmdId = getCmdIdAndHistory(str, pieces, commandList, history);
+
+    switch (cmdId) {
+        case 0: command_authors(pieces); break;
+        case 1: command_pid(); break;
+        case 2: command_ppid(); break;
+        case 3: command_cd(pieces); break;
+        case 4: command_date(pieces); break;
+        case 5: command_historic(pieces, finished, commandList, history, fileList); break;
+        case 6: command_open(pieces, fileList); break;
+        case 7: command_close(pieces, fileList); break;
+        case 8: command_dup(pieces, fileList); break;
+        case 9: command_infosys(); break;
+        case 10: command_makefile(pieces); break;
+        case 11: command_makedir(pieces); break;
+        case 12: command_listFile(pieces); break;
+        case 13: command_cwd(); break;
+        case 14: command_listDir(pieces); break;
+        case 15: command_reclist(pieces); break;
+        case 16: command_revlist(pieces); break;
+        case 17: command_erase(pieces); break;
+        case 18: command_delrec(pieces); break;
+        case 19: command_help(pieces, commandList); break;
         case 20:
         case 21:
         case 22:
-            command_exit(finished,fileList,history,commandList);
-            break;
+            command_exit(finished, fileList, history, commandList);
+        break;
         default:
-            perror("Comando no válido, introduce \"help\" para ver los disponibles");
-            break;
+            printf("Comando no válido, introduce \"help\" para ver los disponibles\n");
+        break;
     }
 }
 
@@ -396,7 +376,7 @@ void command_help(char * pieces[], CommandList *commandList) {
     if (pieces[1] != NULL) {
         for (int i=0; i<commandList->total ;i++) {
             if(strcmp(commandList->commands[i]->name,pieces[1]) == 0) {
-                printf("%s: %s\n", commandList->commands[i]->name,commandList->commands[i]->description);
+                printf("%s %s\n", commandList->commands[i]->name,commandList->commands[i]->description);
                 return;
             }
         }
@@ -1098,3 +1078,5 @@ void command_delrec (char *pieces[]){
         }
     }
 }
+
+
