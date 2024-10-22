@@ -42,6 +42,7 @@ void CleanCommandListC(CommandListC *list);
 bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const char description[LENGTH_MAX_DESCRIPTION], const int ID);
 tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]);
 tCommandC getCommandC(tPosC p, CommandListC L);
+void freeCommandList(CommandListC *list);
 
 
 

@@ -36,24 +36,37 @@ void printCommandListC(CommandListC list) {
 }
 
 void CleanCommandListC(CommandListC *list) {
-    list->lastPos = CNULL;
+    freeCommandList(list);  // Libera a memória antes de limpar
+    list->lastPos = CNULL;  // Agora pode reinicializar
 }
 
 bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const char description[LENGTH_MAX_DESCRIPTION], const int ID) {
+    // Verifica se a lista já está cheia
     if (list->lastPos == LENGTH_MAX_LIST - 1)
         return false;
     else {
+        // Avança a posição e tenta alocar memória para o novo comando
         list->lastPos++;
         list->commands[list->lastPos] = malloc(sizeof(tCommandC));
         if (list->commands[list->lastPos] == NULL) {
-            return false;
+            return false;  // Retorna false se a alocação falhar
         }
-        strncpy(list->commands[list->lastPos]->name,name,LENGTH_MAX_NAME - 1);
-        strncpy(list->commands[list->lastPos]->description,description,LENGTH_MAX_DESCRIPTION - 1);
+
+        // Copia o nome e garante a terminação null
+        strncpy(list->commands[list->lastPos]->name, name, LENGTH_MAX_NAME - 1);
+        list->commands[list->lastPos]->name[LENGTH_MAX_NAME - 1] = '\0';  // Garante que seja null-terminated
+
+        // Copia a descrição e também garante a terminação null
+        strncpy(list->commands[list->lastPos]->description, description, LENGTH_MAX_DESCRIPTION - 1);
+        list->commands[list->lastPos]->description[LENGTH_MAX_DESCRIPTION - 1] = '\0';  // Garante que seja null-terminated
+
+        // Atribui o ID ao comando
         list->commands[list->lastPos]->ID = ID;
-        return true;
+
+        return true;  // Retorna true se a inserção for bem-sucedida
     }
 }
+
 
 tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
     if (isEmptyListC(*list))                                 //Si la lista está vacía devuelve nulo
@@ -70,4 +83,12 @@ tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
 
 tCommandC getCommandC(tPosC p, CommandListC list){
     return *list.commands[p];                                   //Devuelve el elemento dada la posición el la lista
+}
+
+void freeCommandList(CommandListC *list) {
+    for (int i = 0; i <= list->lastPos; i++) {
+        if (list->commands[i] != NULL) {
+            free(list->commands[i]);  //Libera cada comando alocado con el malloc
+        }
+    }
 }
