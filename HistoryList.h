@@ -14,10 +14,10 @@
 
 #define MAX 4096  //Tamaño máximo del array en la implementación estática
 #define HNULL (-1) //Constante para indicar la posición nula o lista vacia
-#define LENGTH_MAX 256
+#define LENGTH_MAX_H 256
 
 typedef int tPosH;
-typedef char tItemH[LENGTH_MAX];
+typedef char tItemH[LENGTH_MAX_H];
 
 typedef struct{
     tItemH *data [MAX];

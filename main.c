@@ -7,7 +7,7 @@
  * DATE: 27 / 09 / 24
  */
 
-#include "functions.h"
+#include "Functions.h"
 
 //Las listas se inicializan todas aqui??
 
