@@ -8,12 +8,8 @@ add_executable(P0_CLion_ main.c
         HistoryList.c
         functions.h
         functions.c
-        Functions.c
-        Functions.h
         CommandList.h
         CommandList.c
-        Commands.c
-        Commands.h
         FileList.c
         FileList.h
 
