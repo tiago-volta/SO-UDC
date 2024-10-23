@@ -11,63 +11,69 @@
 
 #include <stdlib.h>
 
+//Verifica si la lista de comandos está vacía
 bool isEmptyListC(CommandListC list) {
     return list.lastPos == CNULL;
 }
 
+//Crea una lista vacía
 void createEmptyListC(CommandListC *list) {        //Se pasa la lista por referencia porque se quiere modificar su contenido
     list->lastPos = CNULL;                 //Asignar el valor nulo a la variable lastPos para inicializar la lista vacía
 }
 
+//Imprime los nombres y descripciones de todos los comandos en la lista
 void printCommandDescriptionListC(CommandListC list) {
     printf("Comandos disponibles:\n");
     for (int i = 0; i <= list.lastPos; i++) {
-        printf("%s %s\n",list.commands[i]->name,list.commands[i]->description);
+        printf("%s %s\n", list.commands[i]->name, list.commands[i]->description);  //Imprime el nombre y la descripción de cada comando
     }
 }
 
+//Imprime solo los nombres de los comandos disponibles en la lista
 void printCommandListC(CommandListC list) {
-    printf("help  [cmd|-all]	Muestra ayuda sobre los comandos \n");
+    printf("help  [cmd|-all]    Muestra ayuda sobre los comandos \n");  //Imprime el comando 'help'
     printf("Comandos disponibles:\n");
     for (int i = 0; i <= list.lastPos; i++) {
-        printf("%s ",list.commands[i]->name);
+        printf("%s ", list.commands[i]->name);  //Imprime el nombre de cada comando
     }
     printf("\n");
 }
 
+//Limpia la lista de comandos liberando la memoria ocupada y reinicializando la lista
 void CleanCommandListC(CommandListC *list) {
-    freeCommandList(list);  // Libera a memória antes de limpar
-    list->lastPos = CNULL;  // Agora pode reinicializar
+    freeCommandList(list);  //Libera a memória antes de limpar
+    list->lastPos = CNULL;  //Reinicializa la lista
 }
 
+//Inserta un nuevo comando en la lista si no está llena, copiando su nombre, descripción y asignando su ID
 bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const char description[LENGTH_MAX_DESCRIPTION], const int ID) {
-    // Verifica se a lista já está cheia
+    //Verifica si la lista ya está llena
     if (list->lastPos == LENGTH_MAX_LIST - 1)
         return false;
     else {
-        // Avança a posição e tenta alocar memória para o novo comando
+        //Avanza la posición e intenta asignar memoria para el nuevo comando
         list->lastPos++;
         list->commands[list->lastPos] = malloc(sizeof(tCommandC));
         if (list->commands[list->lastPos] == NULL) {
-            return false;  // Retorna false se a alocação falhar
+            return false;  //Retorna false si la asignación falla
         }
 
-        // Copia o nome e garante a terminação null
+        //Copia el nombre y garantiza la terminación null
         strncpy(list->commands[list->lastPos]->name, name, LENGTH_MAX_NAME - 1);
-        list->commands[list->lastPos]->name[LENGTH_MAX_NAME - 1] = '\0';  // Garante que seja null-terminated
+        list->commands[list->lastPos]->name[LENGTH_MAX_NAME - 1] = '\0';  //Garantiza que sea null-terminated
 
-        // Copia a descrição e também garante a terminação null
+        //Copia la descripción y también garantiza la terminación null
         strncpy(list->commands[list->lastPos]->description, description, LENGTH_MAX_DESCRIPTION - 1);
-        list->commands[list->lastPos]->description[LENGTH_MAX_DESCRIPTION - 1] = '\0';  // Garante que seja null-terminated
+        list->commands[list->lastPos]->description[LENGTH_MAX_DESCRIPTION - 1] = '\0';  //Garantiza que acabe en null
 
-        // Atribui o ID ao comando
+        //Asigna el ID al comando
         list->commands[list->lastPos]->ID = ID;
 
-        return true;  // Retorna true se a inserção for bem-sucedida
+        return true;  //Retorna true si la inserción fue exitosa
     }
 }
 
-
+//Busca un comando por su nombre en la lista y devuelve su posición, o CNULL si no lo encuentra
 tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
     if (isEmptyListC(*list))                                 //Si la lista está vacía devuelve nulo
         return CNULL;
@@ -81,10 +87,12 @@ tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
     }
 }
 
+//Retorna el comando en la posición dada en la lista
 tCommandC getCommandC(tPosC p, CommandListC list){
-    return *list.commands[p];                                   //Devuelve el elemento dada la posición el la lista
+    return *list.commands[p];
 }
 
+//Libera la memoria ocupada por todos los comandos en la lista
 void freeCommandList(CommandListC *list) {
     for (int i = 0; i <= list->lastPos; i++) {
         if (list->commands[i] != NULL) {

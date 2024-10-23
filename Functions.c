@@ -20,24 +20,25 @@
 //Imprime el prompt
 void printPrompt(){
     printf("→ ");
-    fflush(stdout);
+    fflush(stdout);       //Vacía el buffer para que el prompt se muestre inmediatamente
 }
 
-//Funcion auxiliar para el read
+//Función auxiliar para dividir una cadena en palabras
 int SplitString(char *str, char *pieces[]){
-    int i=1;
-    if ((pieces[0]=strtok(str," \n\t"))==NULL)
+    int i = 1;
+    if ((pieces[0] = strtok(str, " \n\t")) == NULL) //Divide la cadena por espacios, saltos de línea o tabulaciones
         return 0;
-    while ((pieces[i]=strtok(NULL," \n\t"))!=NULL)
-        i++;
-    return i;
+    while ((pieces[i] = strtok(NULL, " \n\t")) != NULL)  //Sigue dividiendo la cadena por los delimitadores
+        i++;                                        //Incrementa el índice por cada palabra encontrada
+    return i;                                       //Retorna el número de palabras encontradas
 }
 
-//Función auxiliar para guardar en el historial
-static void AddToHistoryList(tItemH *command,HistoryList *lista){
-    tItemH *newItem = command;
-    insertCommandH(newItem,lista);
+//Función auxiliar para añadir un comando al historial
+static void AddToHistoryList(tItemH *command, HistoryList *lista){
+    tItemH *newItem = command;        //Crea una referencia al comando
+    insertCommandH(newItem, lista);   //Inserta el comando en la lista de historial
 }
+
 
 
 void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList){
@@ -48,7 +49,7 @@ void readInput(bool *finished, CommandListC *commandList, HistoryList *history,O
         strcpy(cadena,input);       //Guardo una copia de la cadena en el historial
         size_t len = strlen(cadena);
         if (len > 0 && cadena[len - 1] == '\n') {
-            cadena[len - 1] = '\0';  // Reemplazo '\n' con '\0' para que luego en el historial no de problemas al imprimir la cadena
+            cadena[len - 1] = '\0';  //Reemplazo '\n' con '\0' para que luego en el historial no de problemas al imprimir la cadena
         }
         int NumTrozos=SplitString(input,trozos);  //Splitea la cadena en trozos
         if (NumTrozos>0) {
@@ -73,7 +74,7 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " Muestra el pid del proceso padre del shell",
         " [dir]	Cambia (o muestra) el directorio actual del shell",
         " [-d|-t] Muestra la fecha y/o la hora actual",
-        " [-c|-N|N]	Muestra (o borra)el historico de comandos \n"
+        " [-c|-N|N]	Muestra (o borra) el historico de comandos \n"
         "\t-N: muestra los N primeros \n"
         "\t-c: borra el historico \n"
         "\tN: repite el comando N",
@@ -87,7 +88,7 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " df Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos",
         " Muestra informacion de la maquina donde corre el shell",
         " [name] Crea un fichero de nombre name",
-        " [name]	Crea un directorio de nombre name",
+        " [name] Crea un directorio de nombre name",
         " [-long][-link][-acc] name1 name2 ..	lista ficheros; \n"
         "\t-long: listado largo \n"
         "\t-acc: acesstime \n"
@@ -110,7 +111,7 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         "\t-link: si es enlace simbolico, el path contenido ",
         " [name1 name2 ..] Borra ficheros o directorios vacios",
         " [name1 name2 ..] Borra ficheros o directorios no vacios recursivamente",
-        " [cmd|-all]	Muestra ayuda sobre los comandos \n"
+        " [cmd|-all] Muestra ayuda sobre los comandos \n"
         "\t-cmd: info sobre el comando cmd \n"
         "\t-all: lista todos los comandos con su información ",
         " Termina la ejecucion del shell",
@@ -118,9 +119,9 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " Termina la ejecucion del shell"
     };
 
-    // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
+    //Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     int NumComandos = sizeof(Names) / sizeof(Names[0]);
-    // Copiamos los valores en el struct CommandList
+    //Copiamos los valores en el struct CommandList
     for (int i = 0; i < NumComandos; i++) {
         if (!insertCommandC(commandList,Names[i],Descriptions[i],i))
             perror ("Error insertando los comandos predefinidos");
@@ -129,14 +130,15 @@ void InsertPredefinedCommands(CommandListC *commandList) {
 
 
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
-static int getCommandId (tItemH *str,char *pieces[],CommandListC *commandList,HistoryList *history) {
-    int id = FindCommandC(commandList,pieces[0]);
-    if (id != CNULL) {
-        AddToHistoryList(str,history);
-        return id;
+static int getCommandId(tItemH *str, char *pieces[], CommandListC *commandList, HistoryList *history) {
+    int id = FindCommandC(commandList, pieces[0]);  //Busca el ID del comando en la lista de comandos
+    if (id != CNULL) {                              //Si el comando es válido (ID encontrado)
+        AddToHistoryList(str, history);             //Añade el comando al historial
+        return id;                                  //Retorna el ID del comando
     }
-    return -1;
+    return -1;                                      //Si el comando no es válido, retorna -1
 }
+
 
 //Procesa el comando introducido //Se puede hacer privada??
 void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList){

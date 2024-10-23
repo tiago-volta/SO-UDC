@@ -1,6 +1,3 @@
-//
-// Created by pablojhd on 22/10/24.
-//
 
 #include "Commands.h"
 
@@ -729,8 +726,6 @@ static void listDirectoryRecursivelyReverse(const char *dirName, bool showHidden
     closedir(dir);  // Cerrar el directorio
 }
 
-
-
 void command_revlist(char *pieces[]) {
         bool showHidden = false; //si se deben mostrar los archivos ocultos
         bool showLong = false; //si se debe mostrar información detallada
@@ -815,7 +810,7 @@ void command_erase(char *pieces[]) {
                         perror("Error al borrar el directorio");
                     }
                 } else {
-                    printf("El directorio '%s' no está vacío y no puede ser borrado.\n", pieces[i]);
+                    printf("Imposible borrar '%s' no está vacío y no puede ser borrado.\n", pieces[i]);
                 }
             } else {
                 printf("'%s' no es un fichero regular ni un directorio.\n", pieces[i]);
