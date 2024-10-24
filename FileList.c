@@ -1,10 +1,10 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
+ * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
- * DATE: 14 / 10 / 24
+ * DATE: 25 / 10 / 24
  */
 
 #include "FileList.h"
@@ -38,8 +38,8 @@ tPosF lastF(OpenFileList L){
     if (L == FNULL) {  //Si la lista está vacía, no hay último nodo
         return FNULL;
     }
-    for(p = L; p->next != FNULL; p = p->next);                  //p recorre la lista hasta que encuentre un nodo cuyo campo next es NULL, es decir es decir el campo next de la última posición, el cual consta como NULL por no apuntar a otro nodo.
-    return p;
+    for(p = L; p->next != FNULL; p = p->next);   /*p recorre la lista hasta que encuentre un nodo cuyo campo next es NULL, es decir es decir el campo next de la última posición,
+    return p;                                     el cual consta como NULL por no apuntar a otro nodo.*/
 }
 
 //Retorna el nodo siguiente al nodo proporcionado

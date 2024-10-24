@@ -1,18 +1,24 @@
-//
-// Created by pablojhd on 22/10/24.
-//
+/*
+* TITLE: Sistemas Operativos
+ * SUBTITLE: Práctica 1
+ * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
+ * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
+ * GROUP: 2.3
+ * DATE: 25 / 10 / 24
+ */
 
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
 #include "Functions.h"
 
-#define LENGTH_MAX_INPUT 512
-#define LENGTH_MAX_OUTPUT 256
-#define LENGTH_MAX_PHRASE 128
-#define LENGTH_MAX_PATH 128
-#define LENGTH_MAX_FULLPATH 256
+#define LENGTH_MAX_INPUT 512  //Longitud máxima de la entrada del usuario
+#define LENGTH_MAX_OUTPUT 256 //Longitud máxima de la salida
+#define LENGTH_MAX_PHRASE 128 //Longitud máxima de la frase
+#define LENGTH_MAX_PATH 128  //Longitud máxima de la ruta
+#define LENGTH_MAX_FULLPATH 256  //Longitud máxima de la ruta completa
 
+//Declaraciones de funciones
 void command_authors(char * pieces[]);
 void command_pid();
 void command_ppid();

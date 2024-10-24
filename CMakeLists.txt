@@ -15,5 +15,4 @@ add_executable(P0_CLion_ main.c
         Functions.c
         Commands.c
         Commands.h
-
 )

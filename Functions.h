@@ -1,10 +1,10 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
+ * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
- * DATE: 27 / 09 / 24
+ * DATE: 25 / 10 / 24
  */
 
 #ifndef FUNCTIONS_H
@@ -30,6 +30,7 @@
 #include "FileList.h"
 #include "Commands.h"
 
+//Declaraciones de funciones
 void printPrompt();
 void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList);
 void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList);

@@ -1,10 +1,10 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
+ * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
- * DATE: 27 / 09 / 24
+ * DATE: 25 / 10 / 24
  */
 
 #ifndef FILELIST_H
@@ -15,24 +15,24 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define MAXNAME 25
-#define FNULL NULL
+#define MAXNAME 25  //Tamaño maximo del nombre de un fichero
+#define FNULL NULL  //Definicion de un puntero a NULL
 
 
-//Estructura para almacenar los ficheros abiertos
-typedef struct{
-    int df;             //Descriptor de un archivo
-    int mode;           //Modo en que se abrió el archivo
-    char name[MAXNAME];                     //La lista de canciones de cada usuario está implementada de forma estática
+//Estructura para almacenar información sobre los ficheros abiertos
+typedef struct {
+    int df;               //Descriptor de archivo
+    int mode;             //Modo en que se abrió el archivo
+    char name[MAXNAME];   //Nombre del archivo
 } tItemF;
 
-typedef struct tNode* tPosF;
-typedef tPosF OpenFileList;
+typedef struct tNode* tPosF;  //Puntero a la estructura tNode
+typedef tPosF OpenFileList;   //OpenFileList es un puntero a la estructura tNode
 
-// Estructura para almacenar un file
-struct tNode{
-    tItemF data;
-    tPosF next;
+//Estructura para representar un nodo en la lista enlazada de archivos abiertos
+struct tNode {
+    tItemF data;         //Datos del archivo almacenados en el nodo
+    tPosF next;          //Puntero al siguiente nodo en la lista enlazada
 };
 
 //Declaraciones de funciones

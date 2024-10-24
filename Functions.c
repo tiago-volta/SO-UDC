@@ -1,10 +1,10 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Practica 0
+ * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
- * DATE: 27 / 09 / 24
+ * DATE: 25 / 10 / 24
  */
 
 #include "Functions.h"
@@ -17,7 +17,7 @@
 #include <string.h>
 #include <fcntl.h>
 
-//Imprime el prompt
+//Función que imprime el prompt
 void printPrompt(){
     printf("→ ");
     fflush(stdout);       //Vacía el buffer para que el prompt se muestre inmediatamente
@@ -39,28 +39,33 @@ static void AddToHistoryList(tItemH *command, HistoryList *lista){
     insertCommandH(newItem, lista);   //Inserta el comando en la lista de historial
 }
 
-
-
-void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList){
-    char input[LENGTH_MAX_INPUT];
-    if (fgets(input,LENGTH_MAX_INPUT,stdin) != NULL) {
-        char *trozos[LENGTH_MAX_INPUT];
-        tItemH cadena;
-        strcpy(cadena,input);       //Guardo una copia de la cadena en el historial
-        size_t len = strlen(cadena);
+//Función auxiliar para leer la entrada introducida por el usuario
+void readInput(bool *finished, CommandListC *commandList, HistoryList *history, OpenFileList *openFileList) {
+    char input[LENGTH_MAX_INPUT];  //Buffer para almacenar la entrada del usuario
+    //Lee la entrada del usuario desde la consola
+    if (fgets(input, LENGTH_MAX_INPUT, stdin) != NULL) {
+        char *trozos[LENGTH_MAX_INPUT];  //Array para almacenar los trozos de la entrada
+        tItemH cadena;                    //Variable para almacenar la cadena de entrada
+        strcpy(cadena, input);            //Guarda una copia de la cadena de entrada en el historial
+        size_t len = strlen(cadena);      //Obtiene la longitud de la cadena
+        //Si la cadena tiene longitud mayor que 0 y termina con un salto de línea
         if (len > 0 && cadena[len - 1] == '\n') {
-            cadena[len - 1] = '\0';  //Reemplazo '\n' con '\0' para que luego en el historial no de problemas al imprimir la cadena
+            cadena[len - 1] = '\0';       //Reemplaza '\n' por '\0' para evitar problemas al imprimir en el historial
         }
-        int NumTrozos=SplitString(input,trozos);  //Splitea la cadena en trozos
-        if (NumTrozos>0) {
-            processInput(finished,&cadena,trozos,commandList,history,openFileList);
+        //Divide la cadena en trozos (palabras) y devuelve el número de trozos
+        int NumTrozos = SplitString(input, trozos);
+        //Si se han encontrado trozos, procesa la entrada
+        if (NumTrozos > 0) {
+            processInput(finished, &cadena, trozos, commandList, history, openFileList);  //Procesa la entrada
         }
-    }else
-        perror ("Error al leer la entrada");
+    } else {
+        perror("Error al leer la entrada");  //Imprime un mensaje de error si la lectura falla
+    }
 }
 
-//Debería de poner los comandos aquí en una función que los devuelva con sus descripciones y luego inicializar la lista de comandos con una función del TAD?
+//Función auxiliar para insertar los comandos predefinidos
 void InsertPredefinedCommands(CommandListC *commandList) {
+    //Nomes de los comandos
    const char *Names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
@@ -68,6 +73,7 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         "reclist", "revlist", "erase", "delrec",
         "help", "quit", "exit", "bye"
     };
+    //Descripciones de los comandos
     const char *Descriptions[] = {
         " [-n|-l] Muestra los nombres y/o logins de los autores",
         " [-p] Muestra el pid del shell o de su proceso padre",
@@ -118,7 +124,6 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell"
     };
-
     //Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
     int NumComandos = sizeof(Names) / sizeof(Names[0]);
     //Copiamos los valores en el struct CommandList
@@ -127,8 +132,6 @@ void InsertPredefinedCommands(CommandListC *commandList) {
             perror ("Error insertando los comandos predefinidos");
     }
 }
-
-
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
 static int getCommandId(tItemH *str, char *pieces[], CommandListC *commandList, HistoryList *history) {
     int id = FindCommandC(commandList, pieces[0]);  //Busca el ID del comando en la lista de comandos
