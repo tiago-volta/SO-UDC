@@ -1,6 +1,6 @@
 # Variables
-CC = gcc                                  # Compilador
-CFLAGS = -g -Wall -Wextra                 # Flags para el compilador
+CC = gcc                                  # Compilador a utilizar
+CFLAGS = -g -Wall -Wextra                 # Flags (opciones) para el compilador
 SRC = main.c Functions.c Commands.c FileList.c HistoryList.c CommandList.c  # Archivos fuente
 OBJ = $(SRC:.c=.o)                        # Archivos objeto
 TARGET = p1                               # Nombre del ejecutable
@@ -12,8 +12,8 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-# Regla para crear los archivos objeto
-%.o: %.c
+# Regla para crear los archivos objeto a partir de su archivo fuente	      
+%.o: %.c                                           
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Dependencias entre los archivos fuente y sus cabeceras
