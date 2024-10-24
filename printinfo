@@ -1,0 +1,59 @@
+void printDescriptorInfo(int fd) {
+    // Obtém o modo de abertura usando fcntl
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1) {
+        perror("Error getting file descriptor flags");
+        return;
+    }
+
+    // Obtém o offset usando lseek
+    off_t offset = lseek(fd, 0, SEEK_CUR);
+    if (offset == -1) {
+        perror("Error getting file descriptor offset");
+        return;
+    }
+
+    // Converte flags em uma string legível
+    char *mode = "";
+    if ((flags & O_ACCMODE) == O_RDONLY) mode = "O_RDONLY";
+    else if ((flags & O_ACCMODE) == O_WRONLY) mode = "O_WRONLY";
+    else if ((flags & O_ACCMODE) == O_RDWR) mode = "O_RDWR";
+
+    printf("descriptor: %d, offset: (%ld) -> %s\n", fd, offset, mode);
+}
+
+void command_open(char *pieces[], OpenFileList *openFileList) {
+    int i, df, mode = 0;
+
+    // Lista automáticamente os descritores padrão 0, 1 e 2 (stdin, stdout, stderr)
+    printDescriptorInfo(0); // stdin
+    printDescriptorInfo(1); // stdout
+    printDescriptorInfo(2); // stderr
+
+    // Se não foi especificado um arquivo, listar arquivos abertos
+    if (pieces[1] == NULL) {
+        printListF(*openFileList);  // Lista arquivos abertos
+        return;
+    }
+
+    // Processa os parâmetros para determinar o modo de abertura do arquivo
+    for (i = 2; pieces[i] != NULL; i++) {
+        if (!strcmp(pieces[i], "cr")) mode |= O_CREAT;
+        else if (!strcmp(pieces[i], "ex")) mode |= O_EXCL;
+        else if (!strcmp(pieces[i], "ro")) mode |= O_RDONLY;
+        else if (!strcmp(pieces[i], "wo")) mode |= O_WRONLY;
+        else if (!strcmp(pieces[i], "rw")) mode |= O_RDWR;
+        else if (!strcmp(pieces[i], "ap")) mode |= O_APPEND;
+        else if (!strcmp(pieces[i], "tr")) mode |= O_TRUNC;
+        else break;
+    }
+
+    // Tenta abrir o arquivo com o modo especificado
+    if ((df = open(pieces[1], mode, 0777)) == -1) {   // 0777 é o modo de permissão
+        perror("Imposible abrir archivo");
+    } else {
+        tItemF item = defineItem(df, mode, pieces[1]);  // Define um item com o descritor, o modo e o nome do arquivo
+        if(insertItemF(item, openFileList))            // Adiciona o arquivo à lista de arquivos abertos
+            printf("Archivo abierto: descriptor %d, archivo %s, modo %d\n", df, pieces[1], mode);
+    }
+}
