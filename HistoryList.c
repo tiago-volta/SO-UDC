@@ -46,25 +46,25 @@ bool insertCommandH(tItemH *d, HistoryList *L) {      //Se pasa la lista por ref
 
 //Funcion para imprimir la lista de historial
 void printListH(HistoryList *L) {
-    //Si la lista está vacía, imprimir un mensaje
-    if (L->lastPos == -1) {
+
+    if (L->lastPos == -1) {  //La lista está vacía
         printf("La lista de historial está vacía.\n");
         return;
     }
-    //Recorre la lista e imprimir cada elemento
+
     printf("History List:\n");
-    for (int i = 0; i <= L->lastPos; i++) {
+    for (int i = 0; i <= L->lastPos; i++) {  //Recorre la lista e imprimir cada elemento
         printf("%d: %s\n", i, *L->data[i]);  //Imprime el índice y el comando correspondiente
     }
 }
 
 //Función para imprimir los últimos n comandos del historial
 void printLastNH(HistoryList *L, const int n) {
-    //Verifica si hay suficientes comandos en el historial para imprimir
-    if (L->lastPos >= n - 1) {
+
+    if (L->lastPos >= n - 1) {  //Verifica si hay suficientes comandos en el historial para imprimir
         printf("Últimos %d comandos:\n", n);  //Imprime un encabezado indicando que se van a mostrar los últimos n comandos
-        //Itera desde la posición del último comando menos n hasta la posición del último comando
-        for (int i = L->lastPos - (n - 1); i <= L->lastPos; i++) {
+
+        for (int i = L->lastPos - (n - 1); i <= L->lastPos; i++) {  //Itera desde la posición del último comando menos n hasta la posición del último comando
             printf("%d: %s\n", i, *L->data[i]);  //Imprime el índice y el comando correspondiente
         }
     } else {
@@ -74,8 +74,8 @@ void printLastNH(HistoryList *L, const int n) {
 
 //Función para limpiar el historial
 void CleanListH(HistoryList *L) {
-    //Itera sobre cada comando almacenado en el historial
-    for (int i = 0; i <= L->lastPos; i++) {
+
+    for (int i = 0; i <= L->lastPos; i++) {  //Itera sobre cada comando almacenado en el historial
         free(L->data[i]);  //Libera la memoria ocupada por cada comando
     }
     L->lastPos = HNULL;  //Reinicia la posición del último comando a un valor nulo

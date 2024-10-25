@@ -51,23 +51,19 @@ bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const 
     if (list->lastPos == LENGTH_MAX_LIST - 1)
         return false;
     else {
-        //Avanza la posición e intenta asignar memoria para el nuevo comando
-        list->lastPos++;
-        list->commands[list->lastPos] = malloc(sizeof(tCommandC));
+        list->lastPos++;  //Avanza la posición e intenta asignar memoria para el nuevo comando
+        list->commands[list->lastPos] = malloc(sizeof(tCommandC));  //Asigna memoria para el nuevo comando
         if (list->commands[list->lastPos] == NULL) {
             return false;  //Retorna false si la asignación falla
         }
 
-        //Copia el nombre y garantiza la terminación null
-        strncpy(list->commands[list->lastPos]->name, name, LENGTH_MAX_NAME - 1);
+        strncpy(list->commands[list->lastPos]->name, name, LENGTH_MAX_NAME - 1);   //Copia el nombre y garantiza la terminación null
         list->commands[list->lastPos]->name[LENGTH_MAX_NAME - 1] = '\0';  //Garantiza que sea null-terminated
 
-        //Copia la descripción y también garantiza la terminación null
-        strncpy(list->commands[list->lastPos]->description, description, LENGTH_MAX_DESCRIPTION - 1);
+        strncpy(list->commands[list->lastPos]->description, description, LENGTH_MAX_DESCRIPTION - 1);  //Copia la descripción y también garantiza la terminación null
         list->commands[list->lastPos]->description[LENGTH_MAX_DESCRIPTION - 1] = '\0';  //Garantiza que acabe en null
 
-        //Asigna el ID al comando
-        list->commands[list->lastPos]->ID = ID;
+        list->commands[list->lastPos]->ID = ID;   //Asigna el ID al comando
 
         return true;  //Retorna true si la inserción fue exitosa
     }
@@ -79,11 +75,11 @@ tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
         return CNULL;
     else {
         for (int i=0; i<=list->lastPos ;i++) {
-            if(strcmp(list->commands[i]->name,&name[0]) == 0){
+            if(strcmp(list->commands[i]->name,&name[0]) == 0){  //Compara el nombre del comando con el nombre pasado como argumento
                 return i;
             }
-        }                                               //Si son iguales devuelve la posición en la que se encuentra la cancion
-        return CNULL;                                   //Si no son iguales, es decir la canción no existe en la lista, devuelve nulo
+        }
+        return CNULL;
     }
 }
 

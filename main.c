@@ -22,8 +22,8 @@ int main(void) {
     createEmptyListH(&historyList);  //Inicializa la lista de historial como vacía.
     createEmptyListF(&openFileList);  //Inicializa la lista de archivos abiertos como vacía.
 
-    //Bucle principal que se ejecuta mientras el programa no haya finalizado.
-    while (!finished) {
+
+    while (!finished) {  //Bucle principal que se ejecuta mientras el programa no haya finalizado.
         printPrompt();  //Imprime el prompt para que el usuario ingrese un comando.
         readInput(&finished, &cmdList, &historyList, &openFileList);  //Lee la entrada del usuario y procesa el comando.
     }

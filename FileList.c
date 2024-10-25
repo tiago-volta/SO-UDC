@@ -13,23 +13,23 @@
 
 //Función auxiliar para crear un nuevo nodo
 bool createNodeF(tPosF *p) {
-    *p = malloc(sizeof(struct tNode));
+    *p = malloc(sizeof(struct tNode));  //Asigna memoria para un nuevo nodo
     return *p != FNULL; // Devuelve true si la asignación es exitosa
 }
 
 //Inicializa la lista de archivos abiertos como vacía
-void createEmptyListF(OpenFileList *L){                                 //Se pasa por referencia porque se quiere modificar
-    *L = FNULL;                                                 //Hacemos que L apunte a un NULL
+void createEmptyListF(OpenFileList *L){  //Se pasa por referencia porque se quiere modificar
+    *L = FNULL;  //Hacemos que L apunte a un NULL
 }
 
 //Verifica si la lista de archivos abiertos está vacía
 bool isEmptyList(OpenFileList L){
-    return L == FNULL;                                          //Miramos si L apunta a  NULL
+    return L == FNULL;  //Miramos si L apunta a  NULL
 }
 
 //Retorna la primera posición de la lista
 tPosF firstF(OpenFileList L){
-    return L;                                                   //El primer elemento de la lista es el nodo al que apunta L
+    return L;  //El primer elemento de la lista es el nodo al que apunta L
 }
 
 //Retorna el último nodo de la lista
@@ -43,12 +43,12 @@ tPosF lastF(OpenFileList L){
 }
 
 //Retorna el nodo siguiente al nodo proporcionado
-tPosF nextF(tPosF p){                                   //Devuelve el nodo al que apunta el campo next de la variable introducida
-    return p->next;
+tPosF nextF(tPosF p){
+    return p->next;  //Devuelve el nodo al que apunta el campo next de la variable introducida
 }
 
 //Inserta un nuevo archivo en la lista de archivos abiertos
-bool insertItemF(tItemF d, OpenFileList *L) {                          //Se pasa por referencia porque se quiere modificar
+bool insertItemF(tItemF d, OpenFileList *L) {
     tPosF q, p;
     if (!createNodeF(&q)) {   //Crea un nuevo nodo
         return false;   //Retorna false si no se pudo asignar memoria
@@ -88,7 +88,7 @@ tItemF defineItem(const int df, const int mode, const char *name) {
 
 //Función para obtener el nombre de un fichero por su descriptor
 tItemF getItemF(tPosF p){
-    return p->data;                                    //Devuelve el campo data de la posicion p
+    return p->data;  //Devuelve el campo data de la posicion p
 }
 
 //Función para eliminar un fichero de la lista
@@ -113,8 +113,8 @@ void CleanListF(OpenFileList *L) {
     tPosF p;
     while (*L != FNULL) {   //Mientras la lista no esté vacía
         p = *L;            //Guarda la posición actual
-        *L = (*L)->next;   //Avanza al siguiente nodo
-        free(p);          //Libera la memoria del nodo actual
+        *L = (*L)->next;  //Avanza al siguiente nodo
+        free(p);         //Libera la memoria del nodo actual
     }
 }
 
@@ -125,8 +125,8 @@ void printListF(OpenFileList L) {
         printf("No hay ficheros abiertos\n");
     } else {
         while (p != FNULL) {
-            printf("Descriptor: %d, Name: %s, Mode: %d\n", p->data.df, p->data.name, p->data.mode); //Imprime los datos del archivo
-            p = p->next; //Avanza al siguiente nodo
+            printf("Descriptor: %d, Name: %s, Mode: %d\n", p->data.df, p->data.name, p->data.mode);  //Imprime los datos del archivo
+            p = p->next;  //Avanza al siguiente nodo
         }
     }
 }

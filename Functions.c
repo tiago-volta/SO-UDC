@@ -42,8 +42,8 @@ static void AddToHistoryList(tItemH *command, HistoryList *lista){
 //Función auxiliar para leer la entrada introducida por el usuario
 void readInput(bool *finished, CommandListC *commandList, HistoryList *history, OpenFileList *openFileList) {
     char input[LENGTH_MAX_INPUT];  //Buffer para almacenar la entrada del usuario
-    //Lee la entrada del usuario desde la consola
-    if (fgets(input, LENGTH_MAX_INPUT, stdin) != NULL) {
+
+    if (fgets(input, LENGTH_MAX_INPUT, stdin) != NULL) {  //Lee la entrada del usuario desde la consola
         char *trozos[LENGTH_MAX_INPUT];  //Array para almacenar los trozos de la entrada
         tItemH cadena;                    //Variable para almacenar la cadena de entrada
         strcpy(cadena, input);            //Guarda una copia de la cadena de entrada en el historial
@@ -52,10 +52,10 @@ void readInput(bool *finished, CommandListC *commandList, HistoryList *history, 
         if (len > 0 && cadena[len - 1] == '\n') {
             cadena[len - 1] = '\0';       //Reemplaza '\n' por '\0' para evitar problemas al imprimir en el historial
         }
-        //Divide la cadena en trozos (palabras) y devuelve el número de trozos
-        int NumTrozos = SplitString(input, trozos);
-        //Si se han encontrado trozos, procesa la entrada
-        if (NumTrozos > 0) {
+
+        int NumTrozos = SplitString(input, trozos);  //Divide la cadena en trozos (palabras) y devuelve el número de trozos
+
+        if (NumTrozos > 0) {  //Si se han encontrado trozos, procesa la entrada
             processInput(finished, &cadena, trozos, commandList, history, openFileList);  //Procesa la entrada
         }
     } else {
@@ -65,16 +65,16 @@ void readInput(bool *finished, CommandListC *commandList, HistoryList *history, 
 
 //Función auxiliar para insertar los comandos predefinidos
 void InsertPredefinedCommands(CommandListC *commandList) {
-    //Nomes de los comandos
-   const char *Names[] = {
+
+   const char *Names[] = {  //Nomes de los comandos
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
         "makefile", "makedir", "listfile", "cwd", "listdir",
         "reclist", "revlist", "erase", "delrec",
         "help", "quit", "exit", "bye"
     };
-    //Descripciones de los comandos
-    const char *Descriptions[] = {
+
+    const char *Descriptions[] = {  //Descripciones de los comandos
         " [-n|-l] Muestra los nombres y/o logins de los autores",
         " [-p] Muestra el pid del shell o de su proceso padre",
         " Muestra el pid del proceso padre del shell",
@@ -124,10 +124,10 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " Termina la ejecucion del shell",
         " Termina la ejecucion del shell"
     };
-    //Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
-    int NumComandos = sizeof(Names) / sizeof(Names[0]);
-    //Copiamos los valores en el struct CommandList
-    for (int i = 0; i < NumComandos; i++) {
+
+    int NumComandos = sizeof(Names) / sizeof(Names[0]);  //Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
+
+    for (int i = 0; i < NumComandos; i++) {  //Copiamos los valores en el struct CommandList
         if (!insertCommandC(commandList,Names[i],Descriptions[i],i))
             perror ("Error insertando los comandos predefinidos");
     }
