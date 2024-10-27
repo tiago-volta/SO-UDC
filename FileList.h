@@ -1,5 +1,5 @@
 /*
- * TITLE: Sistemas Operativos
+* TITLE: Sistemas Operativos
  * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
@@ -14,8 +14,12 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define MAXNAME 35
+#define FNULL NULL
 
-#define MAXNAME 25  //Tamaño maximo del nombre de un fichero
+
 #define FNULL NULL  //Definicion de un puntero a NULL
 
 
@@ -48,6 +52,7 @@ tItemF getItemF(tPosF p);
 void deleteOpenFileAtPositionF(tPosF p,OpenFileList *L);
 void CleanListF(OpenFileList *L);
 void printListF(OpenFileList L);
+char * getFileMode(int mode);
 
 
 

@@ -1,10 +1,10 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Práctica 1
+ * SUBTITLE: Practica 0
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
- * DATE: 25 / 10 / 24
+ * DATE: 27 / 09 / 24
  */
 
 #include "Functions.h"
@@ -21,6 +21,24 @@
 void printPrompt(){
     printf("→ ");
     fflush(stdout);       //Vacía el buffer para que el prompt se muestre inmediatamente
+}
+static void AddStandardFileDescriptorsToOpenFileList(OpenFileList *L) {
+    const char *names[3] = {"stdin","stdout","stderr"};
+    int flags;
+    tItemF item;
+    for (int i = 0; i < 3; ++i) {
+        flags = fcntl(i, F_GETFL);
+        item = defineItem(i,flags,names[i]);
+        insertItemF(item,L);
+    }
+}
+
+void InitializateShellLists (CommandListC *c, HistoryList *h, OpenFileList *f) {
+    createEmptyListC(c);
+    InsertPredefinedCommands(c);
+    createEmptyListH(h);
+    createEmptyListF(f);
+    AddStandardFileDescriptorsToOpenFileList(f);
 }
 
 //Función auxiliar para dividir una cadena en palabras
@@ -62,25 +80,22 @@ void readInput(bool *finished, CommandListC *commandList, HistoryList *history, 
         perror("Error al leer la entrada");  //Imprime un mensaje de error si la lectura falla
     }
 }
-
-//Función auxiliar para insertar los comandos predefinidos
+//Debería de poner los comandos aquí en una función que los devuelva con sus descripciones y luego inicializar la lista de comandos con una función del TAD?
 void InsertPredefinedCommands(CommandListC *commandList) {
-
-   const char *Names[] = {  //Nomes de los comandos
+   const char *Names[] = {
         "authors", "pid", "ppid", "cd", "date",
         "historic", "open", "close", "dup", "infosys",
-        "makefile", "makedir", "listfile", "cwd", "listdir",
+        "makefile", "makedir","cwd", "listfile", "listdir",
         "reclist", "revlist", "erase", "delrec",
         "help", "quit", "exit", "bye"
     };
-
-    const char *Descriptions[] = {  //Descripciones de los comandos
+    const char *Descriptions[] = {
         " [-n|-l] Muestra los nombres y/o logins de los autores",
         " [-p] Muestra el pid del shell o de su proceso padre",
         " Muestra el pid del proceso padre del shell",
         " [dir]	Cambia (o muestra) el directorio actual del shell",
         " [-d|-t] Muestra la fecha y/o la hora actual",
-        " [-c|-N|N]	Muestra (o borra) el historico de comandos \n"
+        " [-c|-N|N]	Muestra (o borra)el historico de comandos \n"
         "\t-N: muestra los N primeros \n"
         "\t-c: borra el historico \n"
         "\tN: repite el comando N",
@@ -94,12 +109,12 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " df Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos",
         " Muestra informacion de la maquina donde corre el shell",
         " [name] Crea un fichero de nombre name",
-        " [name] Crea un directorio de nombre name",
+        " [name]	Crea un directorio de nombre name",
+        "Muestra el directorio actual del shell",
         " [-long][-link][-acc] name1 name2 ..	lista ficheros; \n"
         "\t-long: listado largo \n"
         "\t-acc: acesstime \n"
         "\t-link: si es enlace simbolico, el path contenido ",
-        "Muestra el directorio actual del shell",
         " [-hid][-long][-link][-acc] n1 n2 .. lista contenidos de directorios \n"
         "\t-long: listado largo \n"
         "\t-hid: incluye los ficheros ocultos \n"
@@ -117,7 +132,7 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         "\t-link: si es enlace simbolico, el path contenido ",
         " [name1 name2 ..] Borra ficheros o directorios vacios",
         " [name1 name2 ..] Borra ficheros o directorios no vacios recursivamente",
-        " [cmd|-all] Muestra ayuda sobre los comandos \n"
+        " [cmd|-all]	Muestra ayuda sobre los comandos \n"
         "\t-cmd: info sobre el comando cmd \n"
         "\t-all: lista todos los comandos con su información ",
         " Termina la ejecucion del shell",
@@ -125,13 +140,16 @@ void InsertPredefinedCommands(CommandListC *commandList) {
         " Termina la ejecucion del shell"
     };
 
-    int NumComandos = sizeof(Names) / sizeof(Names[0]);  //Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
-
-    for (int i = 0; i < NumComandos; i++) {  //Copiamos los valores en el struct CommandList
+    // Obtenemos el numero total de comandos dividiendo el tamaño total entre el tamaño de un comando
+    int NumComandos = sizeof(Names) / sizeof(Names[0]);
+    // Copiamos los valores en el struct CommandList
+    for (int i = 0; i < NumComandos; i++) {
         if (!insertCommandC(commandList,Names[i],Descriptions[i],i))
             perror ("Error insertando los comandos predefinidos");
     }
 }
+
+
 //Obtenemos el ID del comando para luego poder elegir en el switch, además aprovechamos y guardamos en el historial
 static int getCommandId(tItemH *str, char *pieces[], CommandListC *commandList, HistoryList *history) {
     int id = FindCommandC(commandList, pieces[0]);  //Busca el ID del comando en la lista de comandos
@@ -141,8 +159,6 @@ static int getCommandId(tItemH *str, char *pieces[], CommandListC *commandList, 
     }
     return -1;                                      //Si el comando no es válido, retorna -1
 }
-
-
 //Procesa el comando introducido //Se puede hacer privada??
 void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList){
     switch (getCommandId(str,pieces,commandList,history)) {
@@ -183,13 +199,11 @@ void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *comma
             command_makedir(pieces);
             break;
         case 12:
-            command_listFile(pieces);
-            break;
-        case 13:
             command_cwd();
             break;
+        case 13:
         case 14:
-            command_listDir(pieces);
+            command_list_File_Dir(pieces);
             break;
         case 15:
             command_reclist(pieces);

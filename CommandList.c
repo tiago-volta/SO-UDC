@@ -1,5 +1,5 @@
 /*
- * TITLE: Sistemas Operativos
+* TITLE: Sistemas Operativos
  * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
@@ -41,8 +41,9 @@ void printCommandListC(CommandListC list) {
 
 //Limpia la lista de comandos liberando la memoria ocupada y reinicializando la lista
 void CleanCommandListC(CommandListC *list) {
-    freeCommandList(list);  //Libera a memória antes de limpar
-    list->lastPos = CNULL;  //Reinicializa la lista
+    for (int i = 0; i <= list->lastPos; i++)
+        free(list->commands[i]);
+    list->lastPos = CNULL;
 }
 
 //Inserta un nuevo comando en la lista si no está llena, copiando su nombre, descripción y asignando su ID
@@ -56,16 +57,10 @@ bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const 
         if (list->commands[list->lastPos] == NULL) {
             return false;  //Retorna false si la asignación falla
         }
-
-        strncpy(list->commands[list->lastPos]->name, name, LENGTH_MAX_NAME - 1);   //Copia el nombre y garantiza la terminación null
-        list->commands[list->lastPos]->name[LENGTH_MAX_NAME - 1] = '\0';  //Garantiza que sea null-terminated
-
-        strncpy(list->commands[list->lastPos]->description, description, LENGTH_MAX_DESCRIPTION - 1);  //Copia la descripción y también garantiza la terminación null
-        list->commands[list->lastPos]->description[LENGTH_MAX_DESCRIPTION - 1] = '\0';  //Garantiza que acabe en null
-
-        list->commands[list->lastPos]->ID = ID;   //Asigna el ID al comando
-
-        return true;  //Retorna true si la inserción fue exitosa
+        strncpy(list->commands[list->lastPos]->name,name,LENGTH_MAX_NAME - 1);      //Copia el nombre y garantiza la terminación null
+        strncpy(list->commands[list->lastPos]->description,description,LENGTH_MAX_DESCRIPTION - 1);     //Copia la descripción y también garantiza la terminación null
+        list->commands[list->lastPos]->ID = ID;     //Asigna el ID al comando
+        return true;         //Retorna true si la inserción fue exitosa
     }
 }
 
@@ -86,13 +81,4 @@ tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]) {
 //Retorna el comando en la posición dada en la lista
 tCommandC getCommandC(tPosC p, CommandListC list){
     return *list.commands[p];
-}
-
-//Libera la memoria ocupada por todos los comandos en la lista
-void freeCommandList(CommandListC *list) {
-    for (int i = 0; i <= list->lastPos; i++) {
-        if (list->commands[i] != NULL) {
-            free(list->commands[i]);  //Libera cada comando alocado con el malloc
-        }
-    }
 }

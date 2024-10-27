@@ -1,5 +1,5 @@
 /*
- * TITLE: Sistemas Operativos
+* TITLE: Sistemas Operativos
  * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
@@ -44,7 +44,6 @@ void CleanCommandListC(CommandListC *list);
 bool insertCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME], const char description[LENGTH_MAX_DESCRIPTION], const int ID);
 tPosC FindCommandC(CommandListC *list, const char name[LENGTH_MAX_NAME]);
 tCommandC getCommandC(tPosC p, CommandListC L);
-void freeCommandList(CommandListC *list);
 
 
 

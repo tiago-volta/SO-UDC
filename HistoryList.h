@@ -1,5 +1,5 @@
 /*
- * TITLE: Sistemas Operativos
+* TITLE: Sistemas Operativos
  * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
@@ -34,6 +34,5 @@ void printListH(HistoryList *L);
 void printLastNH (HistoryList *L, const int n);
 void CleanListH(HistoryList *L);
 tPosH lastH(HistoryList L);
-
 
 #endif //HISTORYLIST_H

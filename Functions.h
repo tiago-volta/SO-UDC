@@ -1,6 +1,6 @@
 /*
  * TITLE: Sistemas Operativos
- * SUBTITLE: Práctica 1
+ * SUBTITLE: Practica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
  * GROUP: 2.3
@@ -30,8 +30,8 @@
 #include "FileList.h"
 #include "Commands.h"
 
-//Declaraciones de funciones
 void printPrompt();
+void InitializateShellLists (CommandListC *c, HistoryList *h, OpenFileList *f);
 void readInput(bool *finished, CommandListC *commandList, HistoryList *history,OpenFileList *openFileList);
 void processInput(bool *finished,tItemH *str,char *pieces[], CommandListC *commandList, HistoryList *history,OpenFileList *fileList);
 void InsertPredefinedCommands(CommandListC *commandList);

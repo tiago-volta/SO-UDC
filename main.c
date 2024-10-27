@@ -1,5 +1,5 @@
 /*
- * TITLE: Sistemas Operativos
+* TITLE: Sistemas Operativos
  * SUBTITLE: Práctica 1
  * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
  * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
@@ -16,13 +16,7 @@ int main(void) {
     CommandListC cmdList;  //Lista de comandos.
     HistoryList historyList;  //Lista que almacena el historial de comandos ejecutados.
     OpenFileList openFileList;  //Lista que gestiona los archivos abiertos.
-
-    createEmptyListC(&cmdList);  //Inicializa la lista de comandos como vacía.
-    InsertPredefinedCommands(&cmdList);  //Inserta comandos predefinidos en la lista de comandos.
-    createEmptyListH(&historyList);  //Inicializa la lista de historial como vacía.
-    createEmptyListF(&openFileList);  //Inicializa la lista de archivos abiertos como vacía.
-
-
+    InitializateShellLists(&cmdList,&historyList,&openFileList);
     while (!finished) {  //Bucle principal que se ejecuta mientras el programa no haya finalizado.
         printPrompt();  //Imprime el prompt para que el usuario ingrese un comando.
         readInput(&finished, &cmdList, &historyList, &openFileList);  //Lee la entrada del usuario y procesa el comando.
@@ -30,4 +24,3 @@ int main(void) {
 
     return 0;  //Fin de la función.
 }
-

@@ -18,7 +18,7 @@
 #define LENGTH_MAX_PATH 128  //Longitud máxima de la ruta
 #define LENGTH_MAX_FULLPATH 256  //Longitud máxima de la ruta completa
 
-//Declaraciones de funciones
+
 void command_authors(char * pieces[]);
 void command_pid();
 void command_ppid();
@@ -34,9 +34,8 @@ void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *histor
 
 void command_makefile(char *pieces[]);
 void command_makedir(char *pieces[]);
-void command_listFile(char *pieces[]);
+void command_list_File_Dir(char *pieces[]);
 void command_cwd();
-void command_listDir(char *pieces[]);
 void command_reclist(char *pieces[]);
 void command_revlist(char *pieces[]);
 void command_delrec (char *pieces[]);

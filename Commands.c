@@ -431,7 +431,7 @@ void command_list(char *name, bool showLong, bool showLink, bool showAccessTime,
         // Abrir directorio
         dir = opendir(name);
         if (dir == NULL) {
-            fprintf(stderr, "Error al intentar acceder a %s: %s ", name,strerror(errno));
+            fprintf(stderr, "Error al intentar acceder a %s: %s \n", name,strerror(errno));
             return;
         }
 
@@ -448,7 +448,7 @@ void command_list(char *name, bool showLong, bool showLink, bool showAccessTime,
     } else {
         struct stat data;
         if (lstat(name, &data) == -1) {
-            fprintf(stderr, "Error al intentar acceder a %s: %s ", name,strerror(errno));
+            fprintf(stderr, "Error al intentar acceder a %s: %s \n", name,strerror(errno));
             return;;
         }
         print_file_info(name, &data,showLong,showLink,showAccessTime);  // Usar la función auxiliar
@@ -574,15 +574,13 @@ void command_reclist(char *pieces[]) {
 }
 
 
-//Perfecta, modulizar en todo caso
-
 static void listDirectoryRecursivelyReverse(char *dirName, bool showHidden, bool showLong, bool showLink, bool showAccessTime){
     DIR *dir;
     struct dirent *entry;
     //se abre el directorio especidifcado por dirName
     dir = opendir(dirName);
     if (dir == NULL) {
-        fprintf(stderr, "Error al intentar acceder a %s: %s", dirName,strerror(errno));  // Mensaje de error
+        fprintf(stderr, "Error al intentar acceder a %s: %s\n", dirName,strerror(errno));  // Mensaje de error
         return;
     }
 
@@ -595,7 +593,7 @@ static void listDirectoryRecursivelyReverse(char *dirName, bool showHidden, bool
         }
         snprintf(fullPath, LENGTH_MAX_INPUT, "%s/%s", dirName, entry->d_name); //ruta completa del archivo
         if (stat(fullPath, &fileData) == -1) {
-            fprintf(stderr, "Error al intentar acceder a %s: %s", entry->d_name,strerror(errno));  // Mensaje de error
+            fprintf(stderr, "Error al intentar acceder a %s: %s\n", entry->d_name,strerror(errno));  // Mensaje de error
             continue;
         }
         if (S_ISDIR(fileData.st_mode)) {
@@ -610,6 +608,7 @@ static void listDirectoryRecursivelyReverse(char *dirName, bool showHidden, bool
     if (!isLink) {
         printf("************%s\n", dirName);
     }
+
 
 
     while ((entry = readdir(dir)) != NULL) {
@@ -660,15 +659,14 @@ void command_revlist(char *pieces[]) {
         }
 }
 
-//Borra ficheros o directorios vacios
+//Función que borra archivos o directorios vacíos
 void command_erase(char *pieces[]) {
     struct stat fileStat;
-
-    // Recorre todos los argumentos que se pasan al comando
-    for (int i = 1; pieces[i] != NULL; i++) {  // Cambiado a verificar que pieces[i] no sea NULL
-        // Comprueba si el archivo o directorio existe
+    //Recorre todos los argumentos que se pasan al comando
+    for (int i = 1; pieces[i] != NULL; i++) {  //Cambiado a verificar que pieces[i] no sea NULL
+        //Comprueba si el archivo o directorio existe
         if (stat(pieces[i], &fileStat) == 0) {
-            // Si es un fichero regular, lo borra
+            //Si es un fichero regular, lo borra
             if (S_ISREG(fileStat.st_mode)) {
                 if (unlink(pieces[i]) == 0) {
                     printf("El fichero '%s' ha sido borrado.\n", pieces[i]);
@@ -676,7 +674,7 @@ void command_erase(char *pieces[]) {
                     perror("Error al borrar el fichero");
                 }
             }
-            // Si es un directorio y está vacío, intenta borrarlo
+            //Si es un directorio y está vacío, intenta borrarlo
             else if (S_ISDIR(fileStat.st_mode)) {
                 DIR *dir = opendir(pieces[i]);
                 if (dir == NULL) {
@@ -685,126 +683,134 @@ void command_erase(char *pieces[]) {
                 }
 
                 struct dirent *entry;
-                int isEmpty = 1;  // Asume que el directorio está vacío
+                int isEmpty = 1;  //Asume que el directorio está vacío
 
-                // Recorre el contenido del directorio para comprobar si está vacío
+                //Recorre el contenido del directorio para comprobar si está vacío
                 while ((entry = readdir(dir)) != NULL) {
                     if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-                        isEmpty = 0;  // El directorio no está vacío
+                        isEmpty = 0;  //El directorio no está vacío
                         break;
                     }
                 }
-
                 closedir(dir);
-
-                // Si el directorio está vacío, intenta eliminarlo
+                //Si el directorio está vacío, intenta eliminarlo
                 if (isEmpty) {
                     if (rmdir(pieces[i]) == 0) {
                         printf("El directorio vacío '%s' ha sido borrado.\n", pieces[i]);
                     } else {
                         perror("Error al borrar el directorio");
                     }
+                    //Si el directorio no está vacío, muestra un mensaje de error
                 } else {
-                    printf("El directorio '%s' no está vacío y no puede ser borrado.\n", pieces[i]);
+                    printf("Imposible borrar '%s' no está vacío y no puede ser borrado.\n", pieces[i]);
                 }
+                //Si no es un fichero regular ni un directorio, muestra un mensaje de error
             } else {
                 printf("'%s' no es un fichero regular ni un directorio.\n", pieces[i]);
             }
         } else {
-            // Si no existe el archivo o directorio, muestra un mensaje de error
+            //Si no existe el archivo o directorio, muestra un mensaje de error
             printf("El fichero o directorio '%s' no existe.\n", pieces[i]);
         }
     }
 }
 
+//Función auxiliar que verifica si una ruta corresponde a un directorio
 static bool isDirectory(char *path) {
-    struct stat st;
+    struct stat st;         //Estructura para almacenar información sobre el archivo o directorio
+
+    //Si stat falla (retorna -1), imprime un mensaje de error y retorna 'false'
     if (stat(path, &st) == -1) {
-        fprintf(stderr, "Error al intentar acceder a %s: ", path);  // Mensaje de error
-        perror("");
+        //Imprimir un mensaje de error detallado en stderr indicando que hubo un problema con 'path'
+        fprintf(stderr, "Error al intentar acceder a %s: %s\n", path, strerror(errno));
         return false;
     }
+    //Retorna 'true' si el 'st_mode' indica que la ruta es un directorio, de lo contrario, 'false'
     return S_ISDIR(st.st_mode);
 }
 
 //delrec [name1 name2 ..]	Borra ficheros o directorios no vacios recursivamente
 
-//Acabar, devuelve un bool si ha podido borrar bien el directorio o fichero
+//Función auxiliar que elimina un archivo o directorio de forma recursiva
 static bool deleteRecursively(char *name) {
-    char fullPath[LENGTH_MAX_FULLPATH];
-    // Determinar si la ruta es absoluta o relativa
+    char fullPath[LENGTH_MAX_FULLPATH];  //Almacena la ruta completa del archivo o directorio
+
+    //Determinar si la ruta es absoluta o relativa
     if (name[0] == '/') {
-        // Ruta absoluta
+        //Ruta absoluta, simplemente copiamos el nombre a fullPath
         strncpy(fullPath, name, LENGTH_MAX_FULLPATH - 1);
-        fullPath[LENGTH_MAX_FULLPATH - 1] = '\0';  // Asegurar terminación nula
+        fullPath[LENGTH_MAX_FULLPATH - 1] = '\0';  //Aseguramos la terminación nula
     } else {
-        // Ruta relativa: obtener el directorio actual y concatenar
+        //Ruta relativa, obtenemos el directorio actual y concatenamos con el nombre
         char cwd[LENGTH_MAX_PATH];
-        if (getcwd(cwd, sizeof(cwd)) == NULL) {
-            fprintf(stderr, "Error al obtener el directorio actual: %s",strerror(errno));
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {  // Error al obtener el directorio actual
+            fprintf(stderr, "Error al obtener el directorio actual: %s", strerror(errno));
             return false;
         }
-        snprintf(fullPath, LENGTH_MAX_FULLPATH, "%s/%s", cwd, name);
+        snprintf(fullPath, LENGTH_MAX_FULLPATH, "%s/%s", cwd, name);  // Concatenamos
     }
 
-    if (isDirectory(fullPath)) {        // Si es un directorio, lo eliminamos recursivamente
-        DIR *dir = opendir(fullPath);
+    //Si es un directorio, llamamos recursivamente para eliminar su contenido
+    if (isDirectory(fullPath)) {
+        DIR *dir = opendir(fullPath);  //Abre el directorio
         if (dir == NULL) {
-            fprintf(stderr, "Error al intentar acceder a %s: %s\n", fullPath,strerror(errno));  // Mensaje de error
+            //Error al abrir el directorio
+            fprintf(stderr, "Error al intentar acceder a %s: %s\n", fullPath, strerror(errno));
             return false;
         }
-
         struct dirent *entry;
-        char subPath[LENGTH_MAX_INPUT];
-
-        // Leemos el contenido del directorio
+        char subPath[LENGTH_MAX_INPUT];  //Almacena la ruta completa de los archivos en el directorio
+        //Leemos el contenido del directorio
         while ((entry = readdir(dir)) != NULL) {
+            //Omitimos las entradas especiales '.' y '..' (directorio actual y padre)
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
             }
-
-            // Construimos la ruta completa de los archivos o subdirectorios
+            //Construimos la ruta completa del archivo o subdirectorio
             snprintf(subPath, LENGTH_MAX_INPUT, "%s/%s", fullPath, entry->d_name);
-
-            // Eliminamos recursivamente el contenido del directorio
+            //Llamada recursiva para eliminar el contenido del subdirectorio
             if (!deleteRecursively(subPath)) {
-                closedir(dir);
+                closedir(dir);  //Cerramos el directorio en caso de error
                 return false;
             }
         }
-
-        closedir(dir);
-
-        // Una vez vacío, eliminamos el propio directorio
+        closedir(dir);  //Cerramos el directorio después de recorrer su contenido
+        //Eliminamos el propio directorio vacío
         if (rmdir(fullPath) == -1) {
-            fprintf(stderr, "Error al eliminar directorio %s: %s", fullPath,strerror(errno)); //errno almacena el código de error de la última operación que falló.
+            //Error al eliminar el directorio
+            fprintf(stderr, "Error al eliminar directorio %s: %s\n", fullPath, strerror(errno));
             return false;
         }
-    }else {         // Si es un archivo regular o un enlace simbólico, lo eliminamos
+    } else {
+        // Si es un archivo regular o un enlace simbólico, lo eliminamos
         if (unlink(fullPath) == -1) {
-            fprintf(stderr, "Error al eliminar el archivo %s: %s", name,strerror(errno));  // Mensaje de error
-            fflush(stdout);
+            //Error al eliminar el archivo
+            fprintf(stderr, "Error al eliminar el archivo %s: %s\n", name, strerror(errno));
+            fflush(stdout);  //Vaciar el búfer de salida estándar
             return false;
         }
     }
-
-    return true;
+    return true;  //Eliminación exitosa
 }
 
 
-void command_delrec (char *pieces[]){
+//Función que elimina archivos o directorios no vacíos de forma recursiva
+void command_delrec(char *pieces[]) {
     if (pieces[1] == NULL) {
-        // Si no se especifica un directorio, imprime el directorio de trabajo actual
+        //Si no se especifica un directorio, imprime el directorio de trabajo actual
         char cwd[LENGTH_MAX_PHRASE];
         if (getcwd(cwd, sizeof(cwd)) != NULL) {
             printf("%s\n", cwd);
         } else {
-            fprintf(stderr, "Error al obtener el directorio actual: %s",strerror(errno));
+            //Error al obtener el directorio actual
+            fprintf(stderr, "Error al obtener el directorio actual: %s\n", strerror(errno));
         }
-    }else {
+    } else {
+        //Recorre la lista de directorios o archivos a eliminar
         for (int i = 1; pieces[i] != NULL; ++i) {
-            if(deleteRecursively(pieces[i])) {
-                printf("%s eliminado\n", pieces[i]);    //No ponerlo en la final
+            //Llama a la función deleteRecursively para eliminar cada archivo o directorio
+            if (deleteRecursively(pieces[i])) {
+                printf("%s eliminado\n", pieces[i]);  //Mensaje de confirmación de eliminación
             }
         }
     }

@@ -6,7 +6,6 @@
  * GROUP: 2.3
  * DATE: 25 / 10 / 24
  */
-
 #include "FileList.h"
 
 #include "HistoryList.h"
@@ -32,20 +31,20 @@ tPosF firstF(OpenFileList L){
     return L;  //El primer elemento de la lista es el nodo al que apunta L
 }
 
-//Retorna el último nodo de la lista
 tPosF lastF(OpenFileList L){
     tPosF p;
-    if (L == FNULL) {  //Si la lista está vacía, no hay último nodo
+    if (L == FNULL) {  // Si la lista está vacía, no hay último nodo
         return FNULL;
     }
-    for(p = L; p->next != FNULL; p = p->next);   /*p recorre la lista hasta que encuentre un nodo cuyo campo next es NULL, es decir es decir el campo next de la última posición,
-    return p;                                     el cual consta como NULL por no apuntar a otro nodo.*/
+    for(p = L; p->next != FNULL; p = p->next);                  //p recorre la lista hasta que encuentre un nodo cuyo campo next es NULL, es decir es decir el campo next de la última posición, el cual consta como NULL por no apuntar a otro nodo.
+    return p;
 }
 
 //Retorna el nodo siguiente al nodo proporcionado
 tPosF nextF(tPosF p){
     return p->next;  //Devuelve el nodo al que apunta el campo next de la variable introducida
 }
+
 
 //Inserta un nuevo archivo en la lista de archivos abiertos
 bool insertItemF(tItemF d, OpenFileList *L) {
@@ -87,7 +86,7 @@ tItemF defineItem(const int df, const int mode, const char *name) {
 
 
 //Función para obtener el nombre de un fichero por su descriptor
-tItemF getItemF(tPosF p){
+tItemF getItemF(tPosF p) {
     return p->data;  //Devuelve el campo data de la posicion p
 }
 
@@ -108,25 +107,53 @@ void deleteOpenFileAtPositionF(tPosF p, OpenFileList *L) {
     free(p);   //Libera la memoria del nodo eliminado
 }
 
-//Limpia completamente la lista de archivos abiertos, liberando toda la memoria
 void CleanListF(OpenFileList *L) {
-    tPosF p;
-    while (*L != FNULL) {   //Mientras la lista no esté vacía
-        p = *L;            //Guarda la posición actual
-        *L = (*L)->next;  //Avanza al siguiente nodo
-        free(p);         //Libera la memoria del nodo actual
+    tPosF p = FNULL;
+    int df = 0;
+    while (*L != FNULL) {
+        p = *L;
+        *L = (*L)->next;
+        df = p->data.df;
+        // Intenta cerrar el descriptor de archivo si es válido y no es estándar, ya que si cerramos stdin, stdout o stderr, cualquier operación de lectura, escritura o manejo de errores asociada con la entrada/salida estándar fallará o producirá comportamientos impredecibles antes de que el programa llegue a su fin
+        if (df >= 3) {
+            if (close(df) == -1) {
+                fprintf(stderr,"Error al cerrar el archivo con df: %d\n",df);
+            }
+        }
+        free(p);
     }
 }
 
-//Función para listar los ficheros abiertos
+
+
+
+char *getFileMode(int flags) {
+    static char modeString[128];  // Cadena estática para almacenar la representación de los modos
+    modeString[0] = '\0';  // Asegurar que la cadena comienza vacía
+
+    // Concatenar los modos activados
+    //O_ACCMODE solo se utiliza para determinar si el modo es de lectura, escritura o lectura/escritura
+    if (flags & O_CREAT)  strcat(modeString, "O_CREAT ");
+    if (flags & O_EXCL)   strcat(modeString, "O_EXCL ");
+    if (flags & O_APPEND) strcat(modeString, "O_APPEND ");
+    if (flags & O_TRUNC)  strcat(modeString, "O_TRUNC ");
+    if ((flags & O_ACCMODE) == O_RDONLY) strcat(modeString, "O_RDONLY ");
+    if ((flags & O_ACCMODE) == O_WRONLY) strcat(modeString, "O_WRONLY ");
+    if ((flags & O_ACCMODE) == O_RDWR)   strcat(modeString, "O_RDWR ");
+
+    return modeString;  // Devolver la cadena construida
+}
+
+
+// Función para listar los ficheros abiertos
 void printListF(OpenFileList L) {
     tPosF p = L;
-    if (p == FNULL) { //Si la lista está vacía
+    if (p == FNULL) {       //Si la lista está vacía
         printf("No hay ficheros abiertos\n");
     } else {
         while (p != FNULL) {
-            printf("Descriptor: %d, Name: %s, Mode: %d\n", p->data.df, p->data.name, p->data.mode);  //Imprime los datos del archivo
-            p = p->next;  //Avanza al siguiente nodo
+            printf("Descriptor: %d -> %s %s\n", p->data.df, p->data.name, getFileMode(p->data.mode));
+            p = p->next;
         }
     }
 }
