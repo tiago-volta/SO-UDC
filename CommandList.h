@@ -1,24 +1,16 @@
-/*
-* TITLE: Sistemas Operativos
- * SUBTITLE: Práctica 1
- * AUTHOR 1: Pablo Herrero Diaz LOGIN 1: pablo.herrero.diaz
- * AUTHOR 2: Tiago Da Costa Teixeira Veloso E Volta LOGIN 2: tiago.velosoevolta
- * GROUP: 2.3
- * DATE: 25 / 10 / 24
- */
 #ifndef COMMANDLIST_H
 #define COMMANDLIST_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include<stdbool.h>
+#include <stdbool.h>
 
 //Implementar como estática de punteros
-#define LENGTH_MAX_NAME 15     //Longitud máxima del nombre de un comando
-#define LENGTH_MAX_DESCRIPTION 250   //Longitud máxima de la descripción de un comando
+#define LENGTH_MAX_NAME 30     //Longitud máxima del nombre de un comando
+#define LENGTH_MAX_DESCRIPTION 400  //Longitud máxima de la descripción de un comando
 
-#define LENGTH_MAX_LIST 23  //Lista de 23 punteros a structs
+#define LENGTH_MAX_LIST 50  //Actualmente hay 49 comandos, entonces 50 nos llega como tamaño
 #define CNULL (-1)   //Valor nulo para la lista de comandos
 
 typedef int tPosC;     //Definimos tPosC como un alias de tipo int para manejar posiciones en la lista de comandos

@@ -1,8 +1,7 @@
-//
-// Created by pablojhd on 22/10/24.
-//
-
 #include "Commands.h"
+
+int ext_var1, ext_var2, ext_var3;
+int ext_init_var1 = 10, ext_init_var2 = 20, ext_init_var3 = 30;  // Valores de ejemplo
 
 //Imprime el nombre y/o los logins de los autores
 void command_authors(char * pieces[]) {
@@ -74,18 +73,19 @@ void command_date(char *pieces[]) {
 }
 
 //Función auxiliar para repetir un comando guardado en el historial
-static void repeatCommand(tPosH p,bool *finished, CommandListC *commandList, HistoryList *history, OpenFileList *openFileList){
+static void repeatCommand(tPosH p, bool *finished, CommandListC *commandList, HistoryList *history, OpenFileList *openFileList, MemoryBlockList *memoryBlockList, ProcessList *processList, DirectoryList *directoryList) {
     char *trozos[LENGTH_MAX_PHRASE];
+    char *envp [] = {NULL};
     tItemH cadena;                                                          //Cadena que almacena el comando a repetir
     tItemH *comando = getItemH(p, history);                                 //Obtiene el comando a repetir
     printf("Ejecutando historic (%d): %s\n",p,*comando);
     strcpy(cadena,*comando);                                                //Copia el comando a cadena
     SplitString(*comando,trozos);                                           //Separa el comando en trozos
-    processInput(finished,&cadena,trozos,commandList,history,openFileList); //Procesa el comando
+    processInput(finished,&cadena,trozos, envp, commandList,history,openFileList, memoryBlockList, processList, directoryList); //Procesa el comando
 }
 
 //Mustra el historial de comandos introducidos, o repite un comando ya introducido o imprimer los últimos n comandos
-void command_historic (char *pieces[],bool *finished,CommandListC *commandList, HistoryList *history, OpenFileList *openFileList) {
+void command_historic (char *pieces[],bool *finished,CommandListC *commandList, HistoryList *history, OpenFileList *openFileList, MemoryBlockList *memoryBlockList, ProcessList *processList, DirectoryList *directoryList) {
     char *NoValidCharacter;
 
     //Si se proporciona un argumento numérico
@@ -95,7 +95,7 @@ void command_historic (char *pieces[],bool *finished,CommandListC *commandList, 
 
         if(*NoValidCharacter == '\0') {                                     //Si todo el argumento es un número válido, entonces el puntero NoValidCharacter apuntará al \0, strtol convirtió la cadena exitosamente
             if (0 <= number && number <= lastH(*history)) {
-                repeatCommand(number,finished,commandList,history,openFileList);
+                repeatCommand(number,finished,commandList,history,openFileList, memoryBlockList, processList, directoryList);
             }else if (number < 0) {
                 number = -number;               //Cambiar el signo
                 printLastNH(history,number);    //Imprime los últimos n comandos
@@ -107,7 +107,7 @@ void command_historic (char *pieces[],bool *finished,CommandListC *commandList, 
             fprintf(stderr,"Parte de la cadena no es válida: %s\n", NoValidCharacter);
             printf("Parte numérica leída: %d\n", number);   //Se coge la parte que se ha leído exitosamente
             if (0 <= number && number <= lastH(*history)) {
-                repeatCommand(number,finished,commandList,history,openFileList);
+                repeatCommand(number,finished,commandList,history,openFileList, memoryBlockList, processList, directoryList);
             }else if (number < 0) {
                 number = -number;                  //Cambiar el signo
                 printLastNH(history,number);       //Imprime los últimos n comandos
@@ -246,12 +246,15 @@ void command_help(char * pieces[], CommandListC *commandList) {
 }
 
 //Comando que limpia todas las listas, cierra los archivos y finaliza el programa
-void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandListC *commandList) {
+void command_exit(bool *finished,OpenFileList *openFileList, HistoryList *history, CommandListC *commandList, MemoryBlockList *memoryBlockList, DirectoryList *directoryList, ProcessList *processList) {
 
     // Limpiamos las listas utilizadas en el programa
     CleanCommandListC(commandList);     //Limpia la lista de comandos
     CleanListH(history);                //Limpia el historial de comandos
     CleanListF(openFileList);           //Limpia la lista de archivos abiertos y cierra los archivos abiertos
+    cleanMemoryBlockList(memoryBlockList);  //Limpia la lista de bloques de memoria
+    cleanDirectoryList(directoryList);
+    CleanProcessList(processList);
 
     // Establece una bandera para indicar que la shell debe terminar
     *finished = true;
@@ -380,7 +383,7 @@ void command_cwd() {
 //Funcion auxiliar para obtener los datos de los archivos de un directorio si hide está activo devuelve false y se salta ese archivo
 static bool GetFileData(bool hide, struct stat *data, char *dir, char *name, char *filePath) {
     if (!hide && (name[0] == '.' || strcmp(name, "..") == 0)) {              //Si 'hide' es false y el nombre del archivo comienza con '.' o es "..", se oculta
-        return false;           //No se obtienen datos de archivos ocultos ni del directorio padre
+        return false;           //No se obtienen datos de archivos ocultos ni del directorio padrec
     }
     //Construye la ruta completa del archivo utilizando snprintf
     snprintf(filePath, LENGTH_MAX_INPUT, "%s/%s", dir, name);
@@ -815,3 +818,1624 @@ void command_delrec(char *pieces[]) {
         }
     }
 }
+
+//función asigna memoria compartida
+static void * ObtenerMemoriaShmget (key_t clave, size_t tam){
+    void * p;
+    int aux,id,flags=0777;
+    struct shmid_ds s;
+
+    if (tam)     /*tam distito de 0 indica crear */
+        flags=flags | IPC_CREAT | IPC_EXCL; /*cuando no es crear pasamos de tamano 0*/
+    if (clave==IPC_PRIVATE)  /*no nos vale*/
+        {errno=EINVAL; return NULL;}
+    if ((id=shmget(clave, tam, flags))==-1)
+        return (NULL);
+    if ((p=shmat(id,NULL,0))==(void*) -1){
+        aux=errno;
+        if (tam)
+             shmctl(id,IPC_RMID,NULL);
+        errno=aux;
+        return (NULL);
+    }
+    shmctl (id,IPC_STAT,&s); /* si no es crear, necesitamos el tamano, que es s.shm_segsz*/
+ /* Guardar en la lista   InsertarNodoShared (&L, p, s.shm_segsz, clave); */
+    return (p);
+}
+
+
+//función gestiona la asignación de memoria compartida
+static void do_AllocateCreateshared(char *pieces[], MemoryBlockList *memoryBlockList) {
+    if (pieces[0] == NULL) {
+        // Caso 1: "allocate -createshared"
+        printEspecificBlocks(*memoryBlockList, SHARED_MEMORY);
+        return;
+    }
+
+    key_t cl = (key_t)strtoul(pieces[0], NULL, 10); // Convertir clave
+
+    if (pieces[1] == NULL) {
+        printEspecificBlocks(*memoryBlockList, SHARED_MEMORY);
+        return;
+    }
+
+    size_t tam = (size_t)strtoul(pieces[1], NULL, 10); // Convertir tamaño
+
+    if (tam == 0) {
+        fprintf(stderr, "No se asignan bloques de 0 bytes\n");
+        return;
+    }
+
+    // Caso 3: "allocate -createshared <key> <size>"
+    void *p = ObtenerMemoriaShmget(cl, tam);
+    if (p != NULL) {
+        printf("Asignados %lu bytes en %p\n", (unsigned long)tam, p);
+
+        if (!insertMemoryBlockB(memoryBlockList, p, tam, SHARED_MEMORY, cl, BNULL, -1)) {
+            fprintf(stderr, "Error al insertar el bloque de memoria compartida en la lista\n");
+        }
+    } else {
+        fprintf(stderr, "Imposible asignar memoria compartida clave %lu: %s\n",
+                (unsigned long)cl, strerror(errno));
+    }
+}
+
+//función intenta asignar un segmento de memoria compartida existente
+static void do_AllocateShared(char *pieces[], MemoryBlockList *memoryBlockList) {
+    key_t cl;
+    void *p;
+
+    if (pieces[0] == NULL) {
+        printEspecificBlocks(*memoryBlockList, SHARED_MEMORY);
+        return;
+    }
+
+    cl = (key_t) strtoul(pieces[0], NULL, 10);
+
+    if ((p = ObtenerMemoriaShmget(cl, 0)) != NULL) {
+        printf("Memoria compartida de clave %lu en %p\n", (unsigned long)cl, p);
+        struct shmid_ds s;
+        if (shmctl(shmget(cl, 0, 0666), IPC_STAT, &s) == 0) {
+            if (!insertMemoryBlockB(memoryBlockList, p, s.shm_segsz, SHARED_MEMORY, cl, NULL, -1)) {
+                fprintf(stderr, "Error al insertar el bloque de memoria compartida en la lista\n");
+                shmdt(p);
+            }
+        }
+    } else {
+        fprintf(stderr, "Imposible asignar memoria compartida clave %lu: %s\n", (unsigned long)cl, strerror(errno));
+    }
+}
+
+//función mapea un archivo en la memoria del proceso usando mmap
+static void * MapearFichero (char * fichero, int protection, OpenFileList *openFileList, MemoryBlockList *memoryBlockList){
+    int df, map=MAP_PRIVATE,modo=O_RDONLY;
+    struct stat s;
+    void *p;
+
+    if (protection&PROT_WRITE)
+        modo=O_RDWR;
+    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+        return NULL;
+    if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
+        return NULL;
+
+    // Añade el df a la lista de ficheros abiertos
+    tItemF item = defineItem(df, modo, fichero);
+    if (!insertItemF(item, openFileList) || !insertMemoryBlockB(memoryBlockList, p, s.st_size, MAPPED_FILE, -1, fichero, df)) {
+        perror("Error al insertar el descriptor o el bloque en las listas");
+        munmap(p, s.st_size);
+        close(df);
+        return NULL;
+    }
+
+
+    return p;
+}
+//Función llama a MapearFichero para mapear un archivo
+static void do_AllocateMmap(char *pieces[], MemoryBlockList *memoryBlockList, OpenFileList *openFileList)
+{
+    char *perm;
+    void *p;
+    int protection=0;
+
+    if (pieces[0]==NULL)
+    {printEspecificBlocks(*memoryBlockList,MAPPED_FILE); return;}
+    if ((perm=pieces[1])!=NULL && strlen(perm)<4) {
+        if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
+        if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
+        if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
+    }
+
+    // Mapear el archivo
+    if ((p = MapearFichero(pieces[0], protection, openFileList,memoryBlockList)) == NULL) {
+        perror("Imposible mapear fichero");
+    } else {
+        printf("Fichero %s mapeado en %p\n", pieces[0], p);
+    }
+}
+
+
+//Es un gestor de asignación de memoria que recibe argumentos y decide qué tipo de asignación realizar
+void command_allocate(char *pieces[], MemoryBlockList *memoryBlockList, OpenFileList *openFileList) {
+    if (pieces[1] == NULL) {
+        printAllBlocks(*memoryBlockList);
+        return;
+    }
+
+    if (strcmp(pieces[1], "-malloc") == 0) {
+        if (pieces[2] == NULL) {
+            printEspecificBlocks(*memoryBlockList, MALLOC_MEMORY);
+            return;
+        }
+        size_t n = (size_t) strtoul(pieces[2], NULL, 10);
+        if (n == 0) {
+            fprintf(stderr, "No se asignan bloques de 0 bytes\n");
+            return;
+        }
+        void *address = malloc(n);
+        if (address == NULL) {
+            perror("Error al asignar memoria con malloc");
+            return;
+        }
+
+        if (!insertMemoryBlockB(memoryBlockList, address, n, MALLOC_MEMORY, -1, BNULL, -1)) {  //inserta en la lista
+            fprintf(stderr, "Error al insertar el bloque malloc en la lista de memoria\n");
+            free(address);
+        } else {
+            printf("Asignados %zu bytes en %p\n", n, address);
+        }
+
+    } else if (strcmp(pieces[1], "-mmap") == 0) {
+        if (pieces[2] == NULL) {
+            printEspecificBlocks(*memoryBlockList, MAPPED_FILE);
+        } else {
+            do_AllocateMmap(pieces + 2, memoryBlockList, openFileList);
+        }
+
+    } else if (strcmp(pieces[1], "-createshared") == 0) {
+        if (pieces[2] == NULL) {
+            printEspecificBlocks(*memoryBlockList, SHARED_MEMORY);
+        } else {
+            do_AllocateCreateshared(pieces + 2, memoryBlockList);
+        }
+
+    } else if (strcmp(pieces[1], "-shared") == 0) {
+        if (pieces[2] == NULL) {
+            printEspecificBlocks(*memoryBlockList, SHARED_MEMORY);
+        } else {
+            do_AllocateShared(pieces + 2, memoryBlockList);
+        }
+    } else {
+        fprintf(stderr, "Opción desconocida para allocate\n");
+    }
+}
+
+
+static void do_DeallocateMalloc(char *args[], MemoryBlockList *memblocks) {
+    char *NoValidCharacter;
+    if (args[0] != NULL) {
+        size_t n = strtoul(args[0], &NoValidCharacter, 10); // Convertir argumento a número
+        if (*NoValidCharacter == '\0') { // Validar que el número es válido
+            if (n > 0) {
+                tPosB p = firstB(*memblocks);
+                while (p != BNULL) {
+                    if (p->data.type == MALLOC_MEMORY && p->data.size == n) {
+                        break; // Encontramos el bloque
+                    }
+                    p = nextB(p);
+                }
+                if(p == BNULL) {
+                    printf("No hay bloque de ese tamaño asignado con malloc\n");
+                }else {
+                    free(p->data.address);
+                    removeMemoryBlock(memblocks,p);
+                }
+            }else {
+                printf("No hay bloque de ese tamaño asignado con malloc\n");
+            }
+        } else if (NoValidCharacter == args[0]) { // No se pudo convertir nada
+            printEspecificBlocks(*memblocks,MALLOC_MEMORY);
+        } else {
+            perror("No hay bloque de ese tamaño asignado con malloc\n");
+        }
+    } else {
+        printEspecificBlocks(*memblocks,MALLOC_MEMORY);
+    }
+}
+
+static void do_DeallocateMmap (char *args[],MemoryBlockList *memblocks) {
+    if (args[0] != NULL) {
+        tPosB p = firstB(*memblocks);
+        while (p != BNULL) {
+            if (p->data.type == MAPPED_FILE && strcmp(args[0],p->data.fileName) == 0){
+                break; // Encontramos el bloque
+            }
+            p = nextB(p);
+        }
+
+        // Verificar si se encontró el bloque, sino imprimimos error y salimos para no pasarle un puntero nulo a munmap
+        if (p == BNULL) {
+            fprintf(stderr,"Fichero %s no mapeado\n", args[0]);
+            return;
+        }
+
+        if(munmap(p->data.address,p->data.size) == -1) {
+            perror("Error al desmapear el archivo");
+        }
+        free(p->data.fileName);
+        removeMemoryBlock(memblocks,p);
+    }else {
+        printEspecificBlocks(*memblocks,MAPPED_FILE);
+    }
+}
+
+static void do_DeallocateShared (char *args[], MemoryBlockList *memblocks) {
+    if (args[0] == NULL) {
+        printEspecificBlocks(*memblocks, SHARED_MEMORY);
+        return;
+    }
+    key_t clave;
+    if ((clave=(key_t) strtoul(args[0],NULL,10))==IPC_PRIVATE){
+        printf ("shared necesita clave_valida\n");
+        return;
+    }
+    //Buscar el bloque correspondiente de la lista
+    tPosB p = firstB(*memblocks);
+    while (p != BNULL) {
+        if (p->data.type == SHARED_MEMORY && p->data.smKey == clave) {
+            break; // Encontramos el bloque
+        }
+        p = nextB(p);
+    }
+    if (p == BNULL) {
+        printf("No hay bloque de memoria compartida con la clave %d\n", clave);
+        return;
+    }
+
+    // Intentar desvincular la memoria compartida
+    if (shmdt(p->data.address) == -1) {
+        perror("Error al desvincular memoria compartida");
+        return;
+    }
+
+    removeMemoryBlock(memblocks, p);
+}
+
+
+
+//función elimina un segmento de memoria compartida según su clave
+static void do_DeallocateDelkey (char *args[]){
+    key_t clave;
+    int id;
+    char *key=args[0];
+
+    if (key==NULL || (clave=(key_t) strtoul(key,NULL,10))==IPC_PRIVATE){
+        printf ("delkey necesita clave_valida\n");
+        return;
+    }
+    if ((id=shmget(clave,0,0666))==-1){
+        perror ("shmget: imposible obtener memoria compartida");
+        return;
+    }
+    if (shmctl(id,IPC_RMID,NULL)==-1)
+        perror ("shmctl: imposible eliminar memoria compartida\n");
+}
+
+//Convierte la cadena a un número hexadecimal
+void *cadtop(char *cadena) {
+    //strtoull de la biblioteca estándar de C para convertir la cadena hexadecimal a un número sin signo de 64 bits
+    //(unsigned long long int).
+    unsigned long long int direccion = strtoull(cadena, NULL, 16); //16 indica la base hexadecimal.
+    //Luego, ese número se interpreta como una dirección de memoria y se convierte en un puntero.
+    return (void *)direccion;
+}
+
+static void do_DeallocateAdd (char *args[], MemoryBlockList *memblocks) {
+    void *addr = cadtop(args[0]);  // Convertir la dirección de memoria de cadena a puntero
+    tPosB p = firstB(*memblocks);
+
+    while (p != BNULL) {
+        if (p->data.address == addr) {
+            break; // Encontramos el bloque
+        }
+        p = nextB(p);
+    }
+    if (p == BNULL) {
+        fprintf(stderr,"Direccion %p no asignada con malloc, shared o mmap\n",args[0]);
+    }else {
+        switch (p->data.type) {
+            case MALLOC_MEMORY:
+                free(addr);
+                break;
+            case SHARED_MEMORY:
+                if (shmdt(p->data.address) == -1)
+                    perror("Error al desvincular memoria compartida");
+                break;
+            case MAPPED_FILE: // Identificador es un nombre de archivo
+                if(munmap(p->data.address,p->data.size) == -1) {
+                    perror("Error al desmapear el archivo");
+                }
+                free(p->data.fileName);
+                break;
+            default: // Identificador es una dirección (void *)
+                perror("Tipo no reconocido");
+                break;
+        }
+        removeMemoryBlock(memblocks,p);
+    }
+}
+
+void command_deallocate(char *pieces[],MemoryBlockList *memblocks) {
+    if (pieces[1] != NULL) {
+        if (strcmp(pieces[1], "-malloc") == 0) {
+            do_DeallocateMalloc(pieces + 2, memblocks);
+        }else if (strcmp(pieces[1], "-mmap") == 0) {
+            do_DeallocateMmap(pieces + 2,memblocks);
+        }else if (strcmp(pieces[1], "-shared") == 0) {
+            do_DeallocateShared(pieces + 2,memblocks);
+        }else if (strcmp(pieces[1], "-delkey") == 0) {
+            do_DeallocateDelkey(pieces + 2);
+        }else {
+            do_DeallocateAdd(pieces + 1, memblocks);
+        }
+    }else
+        printAllBlocks(*memblocks);
+}
+
+
+//Llena una región de memoria con un valor específico
+void LlenarMemoria (void *p, size_t cont, unsigned char byte){
+    unsigned char *arr=(unsigned char *) p;
+    size_t i;
+
+    for (i=0; i<cont;i++)
+        arr[i]=byte;
+}
+
+//Llena una región de memoria con un byte específico
+void command_memfill(char *pieces[]) {
+    if (pieces[1] == NULL) {
+        fprintf(stderr, "Error: Faltan argumentos para el comando memfill\n");
+        fprintf(stderr, "Uso: memfill <addr> <cont> <ch>\n");
+        return;
+    }
+
+    void *addr = cadtop(pieces[1]);  // Convertir la dirección de memoria de cadena a puntero
+    size_t cont = 128;  // Valor por defecto 128 si no se pasa un segundo argumento
+    unsigned char ch = 0x41;  // Valor por defecto 'A' (0x41) si no se pasa un tercer argumento
+    if (pieces[2] != NULL) {
+        cont = (size_t) strtoul(pieces[2], NULL, 10);  // Convertir el tamaño de la memoria
+    }
+
+    if (pieces[3] != NULL) {
+        if (pieces[3][0] == '0' && pieces[3][1] == 'x') {    // Verificar si el tercer argumento es un número hexadecimal
+            ch = (unsigned char) strtoul(pieces[3], NULL, 16);   // Convertir el número hexadecimal a byte
+        } else if (isdigit(pieces[3][0])) {  // Verificar si el tercer argumento es un número decimal
+            ch = (unsigned char) strtoul(pieces[3], NULL, 10);   // Convertir el número decimal a byte
+        } else if (pieces[3][0] == '\'' && pieces[3][1] != '\0' && pieces[3][2] == '\'' && pieces[3][3] == '\0') {
+            ch = pieces[3][1];   // Convertir el carácter entre comillas
+        } else {
+            fprintf(stderr, "Error: Formato de byte no válido (debe ser un número o un carácter entre comillas)\n");
+            return;
+        }
+    }
+
+    LlenarMemoria(addr, cont, ch);  // Llenar la memoria con el carácter 'ch' para los 'cont' bytes
+    printf("Llenando %zu bytes de memoria con el byte %c(0x%x) a partir de la direccion %p\n", cont, ch, ch, addr);
+}
+void command_memdump(char *pieces[]) {
+    if (pieces[1] != NULL) {
+        void *addr = cadtop(pieces[1]);  // Convertir la dirección de memoria desde la que se empiezan a leer los bytes de cadena a puntero
+        unsigned char *byte_ptr = (unsigned char *) addr;
+        size_t cont, i, j;
+
+        if (pieces[2] != NULL) {
+            cont = (size_t) strtoul(pieces[2], NULL, 10);  // Convertir el número de bytes a leer de char a long unsigned int
+        }else {
+            cont = 25;  //Tamaño a volcar predeterminado (25 bytes)
+        }
+        printf("Volcando %lu bytes desde la direccion %p\n",cont,addr);
+        // Volcamos los contenidos de memoria en bloques de 16 bytes
+        for(i = 0; i < cont; i+=25) {
+            printf(" ");  // Espaciado inicial para alineación
+
+            // Imprimir los caracteres imprimibles correspondientes a los bytes
+            for (j = 0; j < 25 && i + j < cont; ++j) {
+                unsigned char byte = byte_ptr[i + j];
+                // Si el byte es imprimible, lo mostramos; de lo contrario, mostramos '.'
+                printf(" %c ", isprint(byte) ? byte : '.');
+            }
+            printf("\n");
+            printf(" ");
+            for(j = 0; j < 25 && i + j < cont; j++) {
+                printf("%02x ", byte_ptr[i + j]);
+            }
+            printf("\n");
+        }
+    }
+}
+
+//Ejecuta un comando equivalente a pmap para ver el mapa de memoria del proceso actual
+void Do_pmap (void){    /*sin argumentos*/
+    pid_t pid;       /*hace el pmap (o equivalente) del proceso actual*/
+    char elpid[32];
+    char *pieces[4]={"pmap",elpid,NULL};
+
+    sprintf (elpid,"%d", (int) getpid());
+    if ((pid=fork())==-1){
+        perror ("Imposible crear proceso");
+        return;
+    }
+    if (pid==0){
+        if (execvp(pieces[0],pieces)==-1)
+            perror("cannot execute pmap (linux, solaris)");
+
+        pieces[0]="procstat"; pieces[1]="vm"; pieces[2]=elpid; pieces[3]=NULL;
+        if (execvp(pieces[0],pieces)==-1)/*No hay pmap, probamos procstat FreeBSD */
+            perror("cannot execute procstat (FreeBSD)");
+
+        pieces[0]="procmap",pieces[1]=elpid;pieces[2]=NULL;
+        if (execvp(pieces[0],pieces)==-1)  /*probamos procmap OpenBSD*/
+            perror("cannot execute procmap (OpenBSD)");
+
+        pieces[0]="vmmap"; pieces[1]="-interleave"; pieces[2]=elpid;pieces[3]=NULL;
+        if (execvp(pieces[0],pieces)==-1) /*probamos vmmap Mac-OS*/
+            perror("cannot execute vmmap (Mac-OS)");
+        exit(1);
+    }
+    waitpid(pid,NULL,0);
+ }
+
+
+//Print direcciones
+void command_memory(char *pieces[], MemoryBlockList memoryBlockList) {
+    if (pieces[1] == NULL) {
+        fprintf(stderr, "Error: Faltan argumentos para el comando memory\n");
+        return;
+    }
+
+    if (strcmp(pieces[1], "-funcs") == 0) {
+
+        printf("Funciones programa      %p,    %p,    %p\n", (void *)command_memory, (void *)command_allocate, (void *)command_deallocate);
+
+        printf("Funciones libreria      %p,    %p,    %p\n", (void *)printf, (void *)malloc, (void *)free);
+
+    } else if (strcmp(pieces[1], "-vars") == 0) {
+
+        int local_var1, local_var2, local_var3;
+        printf("Variables locales       %p,    %p,    %p\n", (void *)&local_var1, (void *)&local_var2, (void *)&local_var3);
+
+        printf("Variables globales      %p,    %p,    %p\n", (void *)&ext_init_var1, (void *)&ext_init_var2, (void *)&ext_init_var3);
+
+        printf("Var (N.I.)globales      %p,    %p,    %p\n", (void *)&ext_var1, (void *)&ext_var2, (void *)&ext_var3);
+
+        static int static_var1, static_var2, static_var3;
+        printf("Variables staticas      %p,    %p,    %p\n", (void *)&static_var1, (void *)&static_var2, (void *)&static_var3);
+
+        static int static_init_var1, static_init_var2, static_init_var3;
+        printf("Var (N.I.)staticas      %p,    %p,    %p\n", (void *)&static_init_var1, (void *)&static_init_var2, (void *)&static_init_var3);
+
+
+    } else if (strcmp(pieces[1], "-blocks") == 0) {
+        printAllBlocks(memoryBlockList);
+
+    } else if (strcmp(pieces[1], "-all") == 0) {
+        //Mostrar todo (funciones, variables, bloques)
+        command_memory((char *[]){"memory", "-funcs", NULL},memoryBlockList);
+        command_memory((char *[]){"memory", "-vars", NULL},memoryBlockList);
+        command_memory((char *[]){"memory", "-blocks", NULL},memoryBlockList);
+
+
+    } else if (strcmp(pieces[1], "-pmap") == 0) {
+        Do_pmap();
+    } else {
+        fprintf(stderr, "Opción desconocida para memory\n");
+    }
+}
+
+//Lee un archivo en una región de memoria específica
+ssize_t LeerFichero (char *f, void *p, ssize_t cont)        //ssize_t es long int
+{
+    struct stat s;
+    ssize_t  n;
+    int df,aux;
+
+    if (stat (f,&s)==-1 || (df=open(f,O_RDONLY))==-1)
+        return -1;
+    if (cont==-1)   /* si pasamos -1 como bytes a leer lo leemos entero*/
+        cont=s.st_size;
+    if ((n=read(df,p,cont))==-1){
+        aux=errno;      //Se guarda el valor actual de la salida de erro
+        close(df);      //Se cierra el df obviando, si se obtiene, el código de error
+        errno=aux;      //Se vuelve a establecer el error que habíamos obtenido
+        return -1;      //Se devuelve -1 porque no hemos podido leer el fichero
+    }
+    close (df);
+    return n;
+}
+
+void command_readfile(char *ar[]) {
+    void *p;
+    ssize_t cont=-1;  /*si no pasamos tamano se lee entero */
+    ssize_t n;
+    if (ar[1]==NULL || ar[2]==NULL){
+        printf ("faltan parametros\n");
+        return;
+    }
+
+    // ar[1]: Ruta del archivo
+    // ar[2]: Dirección de memoria (convertida a puntero)
+    p=cadtop(ar[2]);  /*convertimos de cadena a puntero*/
+
+    // Si se proporciona ar[3], lo interpretamos como el tamaño a leer
+    if (ar[3]!=NULL)
+        cont= atoll(ar[3]);
+
+    if ((n=LeerFichero(ar[1],p,cont))==-1)
+        perror ("Imposible leer fichero");
+    else
+        printf ("leidos %lld bytes de %s en %p\n",(long long) n,ar[1],p);
+}
+
+//Escribe en un archivo desde una dirección de memoria específica
+void command_writefile(char *pieces[]) {
+    char *filename;
+    void *addr;
+    size_t cont;
+    ssize_t written;
+    int fd;
+
+    // Verificar que los argumentos mínimos están presentes
+    if (pieces[1] == NULL || pieces[2] == NULL || pieces[3] == NULL) {
+        fprintf(stderr, "Error: Faltan argumentos para el comando writefile\n");
+        fprintf(stderr, "Uso: writefile [-o] <filename> <addr> <cont>\n");
+        return;
+    }
+
+    // Verificar si el primer argumento es "-o" para sobrescribir
+    int overwrite = 0;
+    int base_index = 1;
+    if (strcmp(pieces[1], "-o") == 0) {
+        overwrite = 1;
+        base_index++;
+    }
+
+    // Asignar los argumentos a las variables correspondientes
+    filename = pieces[base_index];
+    addr = (void *)strtoull(pieces[base_index + 1], NULL, 16);
+    cont = (size_t)strtoull(pieces[base_index + 2], NULL, 10);
+
+    // Verificar si el archivo ya existe y manejar según el modo
+    if (!overwrite && access(filename, F_OK) != -1) {
+        fprintf(stderr, "Imposible escribir fichero: File exists\n");
+        return;
+    }
+
+    // Abrir archivo con los flags correctos según el modo de sobrescritura
+    int flags = O_WRONLY | O_CREAT | (overwrite ? O_TRUNC : O_EXCL);
+    fd = open(filename, flags, 0666);
+    if (fd == -1) {
+        perror("Error al abrir el archivo");
+        return;
+    }
+
+    // Intentar escribir en el archivo desde `addr`
+    written = write(fd, addr, cont);
+    if (written == -1) {
+        perror("Error al escribir en el archivo");
+        close(fd);
+        return;
+    } else if ((size_t)written != cont) {
+        fprintf(stderr, "Advertencia: No se pudieron escribir todos los bytes\n");
+    }
+
+    printf("Escritos %zd bytes en %s desde la dirección de memoria %p\n", written, filename, addr);
+
+    close(fd);
+}
+
+//Lee un archivo en una región de memoria específica
+ssize_t LeerDF (int df, void *p, ssize_t cont)
+{
+    struct stat s;
+    ssize_t  n;
+    // Obtener información del archivo si es necesario, es decir si queremos leerlo todo simplemente obtenemos el tamaño para leerlo todo
+    if (cont == -1) {
+        if (fstat(df, &s) == -1) {
+            perror("Error obteniendo información del archivo");
+            return -1;
+        }
+        cont = s.st_size;
+    }
+
+    if ((n=read(df,p,cont))==-1)
+        return -1;      //Se devuelve -1 porque no hemos podido leer el fichero
+
+    return n;
+}
+
+void command_read(char *ar[], OpenFileList *file_list) {
+    void *p;
+    ssize_t cont=-1;  /*si no pasamos tamano se lee entero */
+    ssize_t n;
+    int fd;
+
+    if (ar[1]==NULL || ar[2]==NULL){
+        printf ("faltan parametros\n");
+        return;
+    }
+
+    fd = (int)strtol(ar[1], NULL, 16);
+    // ar[1]: Ruta del archivo
+    // ar[2]: Dirección de memoria (convertida a puntero)
+    p = cadtop(ar[2]);  /*convertimos de cadena a puntero*/
+
+    if (findFile(fd,*file_list) == NULL) {
+        perror("fd no válido");
+        return;
+    }
+
+    // Si se proporciona ar[3], lo interpretamos como el tamaño a leer
+    if (ar[3]!=NULL) {
+        cont= atoll(ar[3]);
+        if (cont == 0) {
+            printf("Error: El tamaño a leer no puede ser 0\n");
+            return;
+        }
+    }
+
+    if ((n=LeerDF(fd,p,cont))==-1)
+        perror ("Imposible leer fichero");
+    else
+        printf ("leidos %lld bytes del descriptor %s en la %p\n",(long long) n,ar[1],p);
+}
+
+
+void command_write(char *pieces[]) {
+    int fd;
+    void *addr;
+    size_t cont;
+    ssize_t written;
+
+    // Verificar que los argumentos mínimos están presentes
+    if (pieces[1] == NULL || pieces[2] == NULL || pieces[3] == NULL) {
+        fprintf(stderr, "Error: Faltan argumentos para el comando write\n");
+        fprintf(stderr, "Uso: write <fd> <addr> <cont>\n");
+        return;
+    }
+
+    // Convertir los argumentos
+    fd = (int) strtol(pieces[1], NULL, 10);
+    if (fd < 0) {
+        fprintf(stderr, "Error: Descriptor de archivo no válido\n");
+        return;
+    }
+    addr = cadtop(pieces[2]);
+    if (addr == NULL) {
+        fprintf(stderr, "Error: Dirección de memoria no válida\n");
+        return;
+    }
+    cont = (size_t) strtoul(pieces[3], NULL, 10);
+    if (cont == 0) {
+        fprintf(stderr, "Error: Tamaño de contenido no válido\n");
+        return;
+    }
+
+    // Escribir en el archivo desde la dirección de memoria especificada
+    written = write(fd, addr, cont);
+    if (written == -1) {
+        perror("Error al escribir en el archivo");
+    } else {
+        printf("Escritos %zd bytes en el descriptor %d desde la direccion %p\n", written, fd, addr);
+    }
+}
+
+
+//Función recursiva que muestra la dirección de su parámetro
+void Recursiva (int n){
+        char automatico[TAMANO];          // Array automático (en la pila)
+    static char estatico[TAMANO];     // Array estático (en memoria estática)
+    /* Imprime:
+     * 1º: Valor del parámetro actual (`n`) de la llamada
+     * 2º: Dirección de la variable `n` (almacenada en la pila, cambia en cada llamada)
+     * 3º: Dirección del array `automatico` (local a cada llamada, por lo que cambia en cada iteración)
+     * 4º: Dirección del array `estatico` (compartida entre todas las llamadas, no cambia)
+     */
+    printf ("parametro:%3d(%p) array %p, arr estatico %p\n",n,&n,automatico, estatico);
+
+    if (n>0)
+        Recursiva(n - 1); // Llamada recursiva: reduce el valor de `n`
+        // Cada llamada agrega un nuevo marco a la pila, modificando las direcciones locales
+}
+
+void command_recurse(char *pieces[]) {
+    if (pieces[1] != NULL) {
+        int n = atoi(pieces[1]);
+        Recursiva(n);
+    }
+}
+
+
+void command_getuid() {
+    uid_t real_uid = getuid();   // UID real
+    uid_t effective_uid = geteuid(); // UID efectivo
+
+    // Obtener el nombre del usuario a partir de los UID
+    struct passwd *real_pw = getpwuid(real_uid);
+    struct passwd *effective_pw = getpwuid(effective_uid);
+
+    // Mostrar credenciales reales
+    if (real_pw) {
+        printf("Credencial real: %d, (%s)\n", real_uid, real_pw->pw_name);
+    } else {
+        printf("Credencial real: %d, (desconocido)\n", real_uid);
+    }
+
+    // Mostrar credenciales efectivas
+    if (effective_pw) {
+        printf("Credencial efectiva: %d, (%s)\n", effective_uid, effective_pw->pw_name);
+    } else {
+        printf("Credencial efectiva: %d, (desconocido)\n", effective_uid);
+    }
+}
+
+static long int getID(char *id) {
+    char *NoValidCharacter;
+    const long int n = strtol(id,&NoValidCharacter,10);     //Variable para almacenar el número si lo hay
+
+    if(NoValidCharacter == id) {              //Si todo el argumento es un número válido, entonces el puntero NoValidCharacter apuntará al \0, strtol convirtió la cadena exitosamente
+        perror("No se introdujo ningún número válido");                    //Si no se introdujo ningún número válido el puntero apuntará a la primera posición de pieces[1],
+        return -1;
+    }
+    if (*NoValidCharacter != '\0') {
+        fprintf(stderr,"Parte de la cadena no es válida: %s\n", NoValidCharacter);      //Se han introducido carácteres válidos antes de que el puntero apunte a uno no válido
+        printf("Parte numérica leída: %li\n", n);
+    }
+    return n;
+}
+
+//Credencial real -> es la del usuario que ejecuta el programa
+//Credencial efectiva -> es la del propietario del archivo ejecutable (p3)
+/*
+ *  Cuando un programa con el bit SUID (rwsr-xr-x) es ejecutado,
+ *  el UID efectivo se establece al propietario del archivo,
+ *  mientras que el UID real permanece igual.
+ */
+void command_setuid(char *pieces[]) {
+    if (pieces[1] != NULL) {
+        if (strcmp(pieces[1], "-l") == 0) {
+            if (pieces[2] != NULL) {
+                // Opción -l: cambiar credencial usando un nombre de usuario
+                struct passwd *pw = getpwnam(pieces[2]);
+                if (pw == NULL) {
+                    fprintf(stderr,"Usuario %s no encontrado\n", pieces[2]);      //Se han introducido carácteres válidos antes de que el puntero apunte a uno no válido
+                    return;
+                }
+                if (setuid(pw->pw_uid) == 0) {
+                    printf("UID cambiado exitosamente a %d (%s)\n", pw->pw_uid, pieces[2]);
+                }else {
+                    perror("Error al cambiar UID");
+                }
+            }else
+                command_getuid();
+        }else{
+            long int uid = getID(pieces[1]);
+            if (uid == -1) {
+                fprintf(stderr, "UID inválido: %s\n", pieces[1]);
+                return;
+            }
+            if (setuid((uid_t)uid) == 0) {
+                printf("UID cambiado exitosamente a %ld\n", uid);
+            } else {
+                perror("Error al cambiar UID");
+            }
+        }
+    }else {
+        command_getuid();
+    }
+}
+
+
+
+int BuscarVariable (char * var, char *e[])  /*busca una variable en el entorno que se le pasa como parámetro*/
+{                                           /*devuelve la posicion de la variable en el entorno, -1 si no existe*/
+    int pos=0;
+    char aux[LENGTH_MAX_PHRASE];
+
+    strcpy (aux,var);
+    strcat (aux,"=");
+
+    while (e[pos]!=NULL)
+        if (!strncmp(e[pos],aux,strlen(aux)))       //Si los n (strlen(aux)) primeros bytes de las cadenas son iguales devuelve pos
+            return (pos);
+        else
+            pos++;
+    errno=ENOENT;   /*no hay tal variable*/
+    return(-1);
+}
+
+int CambiarVariable(char * var, char * valor, char *e[]) /*cambia una variable en el entorno que se le pasa como parÃ¡metro*/
+{                                                        /*lo hace directamente, no usa putenv*/
+    int pos;
+    char *aux;
+
+    if ((pos=BuscarVariable(var,e))==-1)
+        return(-1);
+
+    if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
+        return -1;
+    strcpy(aux,var);
+    strcat(aux,"=");
+    strcat(aux,valor);
+    e[pos]=aux;
+    return (pos);
+}
+
+extern char **environ;         // Use the global environ variable
+
+//mostra el valor y la direccion de las variables de entorno especificadas por el usuario
+void command_showvar(char *pieces[], char *env[]) {
+    if (pieces[1] == NULL) {
+        // Mostrar todas las variables de entorno
+        for (int i = 0; env[i] != NULL; i++) {
+            printf("%p->main arg3[3][%d]=(%p) %s\n", (void *)&env[i], i, (void *)env[i], env[i]);
+        }
+    } else {
+        int pos;
+        if ((pos = BuscarVariable(pieces[1], env)) != -1) {
+            char *value = getenv(pieces[1]);
+            printf("Con arg3 main %s=%s(%p) @%p\n", pieces[1], value, (void *)env, (void *)&env[pos]);
+            printf("  Con environ %s=%s(%p) @%p\n", pieces[1], value, (void *)environ, (void *)environ[pos]);
+            printf("   Con getenv %s(%p)\n", value, (void *)value);
+        } else if ((pos = BuscarVariable(pieces[1], environ)) != -1) {
+            // Caso en el que la variable se encuentra en "environ"
+            char *value = getenv(pieces[1]);
+            printf("Con environ %s=%s(%p) @%p\n", pieces[1], value, (void *)value, (void *)&environ[pos]);
+            printf("   Con getenv %s(%p)\n", value, (void *)value);
+        } else {
+            // Caso en el que la variable no se encuentra
+            printf("Variable: %s no encontrada en el entorno\n", pieces[1]);
+        }
+    }
+}
+
+void command_changevar(char *pieces[], char *env[]) {
+    if (pieces[1] == NULL || pieces[2] == NULL || pieces[3] == NULL) {
+        fprintf(stderr, "Uso: changevar [-a|-e|-p] var valor\n");
+        return;
+    }
+
+    if (strcmp(pieces[1], "-a") == 0) {
+        int result = CambiarVariable(pieces[2], pieces[3], env);
+        if (result == -1) {
+            perror("Error");
+        }
+    } else if (strcmp(pieces[1], "-e") == 0) {
+        int result = CambiarVariable(pieces[2], pieces[3], environ);
+        if (result == -1) {
+            perror("Error");
+        }
+    } else if (strcmp(pieces[1], "-p") == 0) {
+        char *var = pieces[2];
+        char *value = pieces[3];
+        char *env_var = (char *)malloc(strlen(var) + strlen(value) + 2);
+        if (env_var != NULL){
+            sprintf(env_var, "%s=%s", var, value);
+            if(putenv(env_var) != 0)
+                perror("Error");
+        }
+    } else {
+        fprintf(stderr, "Error\n");
+    }
+}
+
+
+void command_subsvar(char *pieces[],char *env[]) {
+    if (pieces[1] == NULL || pieces[2] == NULL || pieces[3] == NULL || pieces[4] == NULL) {
+        fprintf(stderr, "Uso: subsvar [-a|-e] var1 var2 valor\n");
+        return;
+    }
+
+    if (strcmp(pieces[1], "-a") == 0) {
+        // Accede por el tercer argumento de main
+        for (int i = 0; env[i] != NULL; i++) {
+            if (strncmp(env[i], pieces[2], strlen(pieces[2])) == 0 && env[i][strlen(pieces[2])] == '=') {
+                // Verifica si ya existe una variable con el nombre pieces[3]
+                for (int j = 0; env[j] != NULL; j++) {
+                    if (strncmp(env[j], pieces[3], strlen(pieces[3])) == 0 && env[j][strlen(pieces[3])] == '=') {
+                        fprintf(stderr, "Imposible sustituir variable %s por %s: File exists\n", pieces[2], pieces[3]);
+                        return;
+                    }
+                }
+                // Duplica el valor actual de var1 y lo asigna a var2 en pieces[3]
+                snprintf(env[i], strlen(pieces[3]) + strlen(pieces[4]) + 2, "%s=%s", pieces[3], pieces[4]);
+                return;
+            }
+        }
+    } else if (strcmp(pieces[1], "-e") == 0) {
+        // Accede mediante environ usando setenv
+        if (getenv(pieces[3]) != NULL) {
+            fprintf(stderr, "Imposible sustituir variable %s por %s: File exists\n", pieces[2], pieces[3]);
+            return;
+        }
+        // Elimina var1 de environ y añade var2 con el valor
+        if (unsetenv(pieces[2]) == -1) {
+            perror("Error al eliminar la variable de entorno");
+            return;
+        }
+        if (setenv(pieces[3], pieces[4], 1) == -1) {
+            perror("Error al establecer la nueva variable de entorno");
+            return;
+        }
+    } else {
+        fprintf(stderr, "Opcion no valida: %s\n", pieces[1]);
+    }
+}
+
+void command_environ(char *pieces[], char *envp[]) {
+    if (pieces[1] == NULL) {
+        for (int i = 0; envp[i] != NULL; i++) {
+            printf("%p->main pieces[3][%d]=(%p) %s\n", (void *)&envp[i], i, (void *)envp[i], envp[i]);
+        }
+        return;
+    }
+
+    if (strcmp(pieces[1], "-environ") == 0) {
+        for (int i = 0; envp[i] != NULL; i++) {
+            printf("%p->environ[%d]=(%p) %s\n", (void *)&envp[i], i, (void *)envp[i], envp[i]);
+        }
+    } else if (strcmp(pieces[1], "-addr") == 0) {
+        printf("environ:   %p (almacenado en %p)\n", (void *)envp, (void *)&environ);
+        printf("main pieces[3]: %p (almacenado en %p)\n", (void *)envp, (void *)&envp);
+    }else {
+        fprintf(stderr, "Uso: environ [-environ|-addr]\n");
+    }
+}
+void command_fork(ProcessList *P) {
+    pid_t pid;
+
+    if ((pid=fork())==0){
+        delJobs(P);
+        printf ("ejecutando proceso %d\n", getpid());
+    }
+    else if (pid!=-1)
+        waitpid (pid,NULL,0);
+}
+
+//Maybe change directoryList name to searchList.
+static void getEnvariablePATH (DirectoryList *directoryList) {
+    char *path = getenv("PATH");
+    if (path == NULL) {
+        fprintf(stderr, "No se pudo obtener la variable PATH\n");
+        return;
+    }
+
+    // Hacer una copia de PATH para evitar modificarlo
+    char *pathCopy = strdup(path);
+    if (pathCopy == NULL) {
+        perror("Error al duplicar PATH");
+        return;
+    }
+
+    int directories = 0;
+    char *dir = strtok(pathCopy, ":");
+    while (dir != NULL) {
+        if (addDirectoryD(directoryList, dir)) {
+            directories++;
+        }
+        dir = strtok(NULL, ":");
+    }
+    free(pathCopy); // Liberar la memoria de la copia de PATH
+    printf("Importados %d directorios en la ruta de busqueda\n", directories);
+}
+
+
+void command_search(char *pieces[], DirectoryList *directoryList) {
+    if (pieces[1] != NULL) {
+        if (strcmp(pieces[1], "-add") == 0) {
+            if (pieces[2] != NULL) {
+                if (!addDirectoryD(directoryList, pieces[2])) {
+                    perror("Imposible insertar directorio");
+                }
+            }else
+                perror("Imposible realizar operacion -add");
+        }else if (strcmp(pieces[1], "-del") == 0){
+            if (pieces[2] != NULL) {
+                tPosD p = firstD(*directoryList);
+                while (p != DNULL && strcmp(p->directory, pieces[2]) != 0) {
+                    p = nextD(p);
+                }
+                if (p == DNULL) {
+                    fprintf(stderr,"Direccion %s no encontrado\n",pieces[2]);
+                }else {
+                    removeDirectoryD(directoryList, p);
+                    printf("Direccion %s eliminada\n",pieces[2]);
+                }
+            }
+        }else if (strcmp(pieces[1], "-clear") == 0) {
+            cleanDirectoryList(directoryList);
+        }else if (strcmp(pieces[1], "-path") == 0) {
+            getEnvariablePATH(directoryList);
+        }
+    }else {
+        ListDirectoryList(*directoryList);
+    }
+}
+
+char * Ejecutable (char *s, DirectoryList *directoryList)
+{
+    static char path[MAXNAME];
+    struct stat st;
+    char *p;
+
+    //Si el nombre del ejecutable es nulo o la lista de rutas está vacía retornamos s.
+    if (s==NULL || (p=SearchListFirstD(*directoryList))==NULL)
+        return s;
+    if (s[0]=='/' || !strncmp (s,"./",2) || !strncmp (s,"../",3))
+        return s;        /*is an absolute pathname*/
+
+    //Se construye una ruta completa combinando el directorio p con el nombre del archivo s
+    strncpy (path, p, MAXNAME-1);strncat (path,"/",MAXNAME-1); strncat(path,s,MAXNAME-1);
+    if (lstat(path,&st)!=-1)    //Si la ruta hasta el archivo existe devuelve la ruta completa
+        return path;
+
+    //Iteramos por el resto de la lista en busca de la ruta correcta para el ejecutable
+    tPosD q = nextD(firstD(*directoryList));
+    while (q != DNULL){
+        p = GetDirectory(q);
+        strncpy (path, p, MAXNAME-1);strncat (path,"/",MAXNAME-1); strncat(path,s,MAXNAME-1);
+        if (lstat(path,&st)!=-1)
+            return path;
+        q = nextD(q);
+    }
+    return s;
+}
+
+int Execpve(char *tr[], char **NewEnv, long int * pprio, DirectoryList *directoryList)
+{
+    char *p;               /*NewEnv contains the address of the new environment*/
+    /*pprio the address of the new priority*/
+    /*NULL indicates no change in environment and/or priority*/
+    if (tr[0]==NULL || (p=Ejecutable(tr[0], directoryList))==NULL){     //Si el nombre del ejecutable es NULL o no se encuentra ruta para el ejecutable se devuelve error
+        errno=EFAULT;
+        return-1;
+    }
+    if (pprio !=NULL  && setpriority(PRIO_PROCESS,getpid(),*pprio)==-1 && errno){
+        printf ("Imposible cambiar prioridad: %s\n",strerror(errno));
+        return -1;
+    }
+
+    if (NewEnv==NULL) {
+        return execv(p,tr);
+    }else {
+        return execve (p, tr, NewEnv);
+    }
+}
+
+static void liberarEnvironVars(const int *environVarsCount, char *environVars[]) {
+    for (int i = 0; i < *environVarsCount; i++) {
+        free(environVars[i]); // Liberar cada cadena.
+    }
+}
+
+void command_exec(char *pieces[], DirectoryList *directoryList, char *env[]) {
+    char *environVars[64]; // Buffer para las variables de entorno.
+    int environVarsCount = 0, argumentsCount = 0;
+    char *executableName = NULL;
+    char *arguments[64];   // Buffer para los argumentos del ejecutable.
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 0; pieces[i] != NULL; i++) {
+        int envIndex = BuscarVariable(pieces[i], env);
+        if (envIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[envIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName == NULL) {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        liberarEnvironVars(&environVarsCount, environVars);
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Reemplazar el proceso actual con el nuevo ejecutable.
+    if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, NULL, directoryList) == -1) {
+        perror("Error ejecutando programa");
+        liberarEnvironVars(&environVarsCount, environVars);
+        _exit(-1);
+    }
+    liberarEnvironVars(&environVarsCount, environVars);
+}
+
+void command_execpri(char *pieces[], DirectoryList *directoryList, char *env[]) {
+    if (pieces[0] == NULL || pieces[1] == NULL) {
+        fprintf(stderr, "Uso: execpri <prio> <prog> <args...>\n");
+        return;
+    }
+
+    long int priority = strtol(pieces[0], NULL, 10);
+    char *environVars[64]; // Buffer para las variables de entorno.
+    char *arguments[64];   // Buffer para los argumentos del ejecutable.
+    int environVarsCount = 0, argumentsCount = 0;
+    char *executableName = NULL;
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 1; pieces[i] != NULL; i++) {
+        int envIndex = BuscarVariable(pieces[i], env);
+        if (envIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[envIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName == NULL) {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        liberarEnvironVars(&environVarsCount, environVars);
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Reemplazar el proceso actual con el nuevo ejecutable.
+    if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, &priority, directoryList) == -1) {
+        perror("Error ejecutando programa");
+        liberarEnvironVars(&environVarsCount, environVars);
+        _exit(-1);
+    }
+    liberarEnvironVars(&environVarsCount, environVars);
+}
+
+
+struct SEN {
+    char *nombre; // Nombre de la señal, por ejemplo "INT"
+    int senal;    // Número de la señal, por ejemplo SIGINT
+};
+
+
+/*las siguientes funciones nos permiten obtener el nombre de una senal a partir
+del nÃºmero y viceversa */
+static struct SEN sigstrnum[]={
+    {"HUP", SIGHUP},
+    {"INT", SIGINT},
+    {"QUIT", SIGQUIT},
+    {"ILL", SIGILL},
+    {"TRAP", SIGTRAP},
+    {"ABRT", SIGABRT},
+    {"IOT", SIGIOT},
+    {"BUS", SIGBUS},
+    {"FPE", SIGFPE},
+    {"KILL", SIGKILL},
+    {"USR1", SIGUSR1},
+    {"SEGV", SIGSEGV},
+    {"USR2", SIGUSR2},
+    {"PIPE", SIGPIPE},
+    {"ALRM", SIGALRM},
+    {"TERM", SIGTERM},
+    {"CHLD", SIGCHLD},
+    {"CONT", SIGCONT},
+    {"STOP", SIGSTOP},
+    {"TSTP", SIGTSTP},
+    {"TTIN", SIGTTIN},
+    {"TTOU", SIGTTOU},
+    {"URG", SIGURG},
+    {"XCPU", SIGXCPU},
+    {"XFSZ", SIGXFSZ},
+    {"VTALRM", SIGVTALRM},
+    {"PROF", SIGPROF},
+    {"WINCH", SIGWINCH},
+    {"IO", SIGIO},
+    {"SYS", SIGSYS},
+/*senales que no hay en todas partes*/
+#ifdef SIGPOLL
+    {"POLL", SIGPOLL},
+#endif
+#ifdef SIGPWR
+    {"PWR", SIGPWR},
+#endif
+#ifdef SIGEMT
+    {"EMT", SIGEMT},
+#endif
+#ifdef SIGINFO
+    {"INFO", SIGINFO},
+#endif
+#ifdef SIGSTKFLT
+    {"STKFLT", SIGSTKFLT},
+#endif
+#ifdef SIGCLD
+    {"CLD", SIGCLD},
+#endif
+#ifdef SIGLOST
+    {"LOST", SIGLOST},
+#endif
+#ifdef SIGCANCEL
+    {"CANCEL", SIGCANCEL},
+#endif
+#ifdef SIGTHAW
+    {"THAW", SIGTHAW},
+#endif
+#ifdef SIGFREEZE
+    {"FREEZE", SIGFREEZE},
+#endif
+#ifdef SIGLWP
+    {"LWP", SIGLWP},
+#endif
+#ifdef SIGWAITING
+    {"WAITING", SIGWAITING},
+#endif
+     {NULL,-1},
+    };    /*fin array sigstrnum */
+
+char *NombreSenal(int sen)  /*devuelve el nombre senal a partir de la senal*/
+{			/* para sitios donde no hay sig2str*/
+    int i;
+    for (i=0; sigstrnum[i].nombre!=NULL; i++)
+        if (sen==sigstrnum[i].senal)
+            return sigstrnum[i].nombre;
+    return ("SIGUNKNOWN");
+}
+
+/*Revisar valor de retorno porque cuando, back xterm -fg green -bg black -e /usr/local/bin/ksh, falla y se guarda en lista
+ * porque en el valor de retorno está uno en vez de 255 como en shell de referencia */
+
+void command_fg(char *pieces[], char *env[], DirectoryList *directoryList) {
+    pid_t pid;
+    char *environVars[64]; // Buffer para las variables de entorno.
+    char *arguments[64]; // Buffer para los argumentos del ejecutable.
+    int environVarsCount = 0, argumentsCount = 0, EnvIndex = 0;
+    char *executableName = NULL;
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 0; pieces[i] != NULL; i++) {
+        EnvIndex = BuscarVariable(pieces[i], env);
+        if (EnvIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[EnvIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName != NULL) {
+        arguments[0] = executableName;
+    } else {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Crear proceso hijo.
+    if ((pid = fork()) == 0) {
+        // Proceso hijo: Ejecutar el programa.
+        if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, NULL, directoryList) == -1) {
+            perror("Error ejecutando programa");
+            liberarEnvironVars(&environVarsCount, environVars);
+            _exit(-1);
+        }
+    } else if (pid > 0) {
+        // Proceso padre: Esperar a que el hijo termine.
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("Error esperando al proceso hijo");
+        } else if (WIFSIGNALED(status)) {
+            int signal = WTERMSIG(status);
+            printf("El proceso fue terminado por señal: %s\n", NombreSenal(signal));
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+    } else {
+        liberarEnvironVars(&environVarsCount, environVars);
+        perror("Error creando el proceso");
+    }
+}
+
+void command_fgpri(char *pieces[], char *env[], DirectoryList *directoryList) {
+    pid_t pid;
+    char *environVars[64]; // Buffer para las variables de entorno.
+    char *arguments[64]; // Buffer para los argumentos del ejecutable.
+    int environVarsCount = 0, argumentsCount = 0, EnvIndex = 0;      //environ empieza en -1 para empezar a escribir en 0 y arguments en 0 para empezar a escribir en 1 ya que hay que dejar hueco para el nombre del ejecutable
+    char *executableName = NULL;
+    long int prio = 0;
+
+    // Validar que la prioridad esté en pieces[1] y sea un número válido.
+
+    if (pieces[0] != NULL) {
+        char *endptr;
+        prio = strtol(pieces[0], &endptr, 10); // Usar strtol para validar el número.
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: La prioridad '%s' no es un número válido.\n", pieces[0]);
+            return;
+        }
+    }else
+        return;
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 1; pieces[i] != NULL; i++) {
+        // Si la variable ya ha sido agregada, no se vuelve a agregar.
+        EnvIndex = BuscarVariable(pieces[i], env);
+        if (EnvIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[EnvIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName != NULL) {
+        arguments[0] = executableName;
+    } else {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        liberarEnvironVars(&environVarsCount, environVars);
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Crear proceso hijo.
+    if ((pid = fork()) == 0) {
+        // Proceso hijo: Ejecutar el programa.
+        if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, &prio, directoryList) == -1) {
+            perror("Error ejecutando programa");
+            liberarEnvironVars(&environVarsCount, environVars);
+            _exit(-1);
+        }
+    } else if (pid > 0) {
+        // Proceso padre: Esperar a que el hijo termine.
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("Error esperando al proceso hijo");
+        } else if (WIFSIGNALED(status)) {
+            int signal = WTERMSIG(status);
+            printf("El proceso fue terminado por señal: %s\n", NombreSenal(signal));
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+    } else {
+        liberarEnvironVars(&environVarsCount, environVars);
+        perror("Error creando el proceso");
+    }
+
+
+}
+void command_back(char *pieces[], char *env[], DirectoryList *directoryList, ProcessList *processList) {
+    pid_t pid;
+    char *environVars[64]; // Buffer para las variables de entorno.
+    char *arguments[64]; // Buffer para los argumentos del ejecutable.
+    int environVarsCount = 0, argumentsCount = 0, EnvIndex = 0;
+    char *executableName = NULL;
+
+    char fullcommand[1024] = "";
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 0; pieces[i] != NULL; i++) {
+        strcat(fullcommand, pieces[i]); // Agregar cada parte del comando a fullCommand.
+        strcat(fullcommand, " ");      // Agregar un espacio entre los argumentos.
+
+        EnvIndex = BuscarVariable(pieces[i], env);
+        if (EnvIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[EnvIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    fullcommand[strlen(fullcommand) - 1] = '\0'; // Eliminar el espacio extra al final.
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName != NULL) {
+        arguments[0] = executableName;
+    } else {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        liberarEnvironVars(&environVarsCount, environVars);
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Crear proceso hijo.
+    if ((pid = fork()) == 0) {
+        // Proceso hijo: Ejecutar el programa.
+        if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, NULL, directoryList) == -1) {
+            perror("Error ejecutando programa");
+            liberarEnvironVars(&environVarsCount, environVars);
+            _exit(-1);
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+
+    }else if (pid > 0) {
+        // Proceso padre: Añadir proceso a la lista.
+        if (!addProcess(processList, pid, fullcommand)) {                           //Se añade el proceso del background en la lista con su pid y el nombre del comando ejecutado
+            fprintf(stderr, "Error añadiendo el proceso a la lista.\n");
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+    }else {
+        liberarEnvironVars(&environVarsCount, environVars);
+        perror("Error creando el proceso");
+    }
+}
+
+void command_backpri(char *pieces[], char *env[], DirectoryList *directoryList, ProcessList *processList) {
+    pid_t pid;
+    char *environVars[64]; // Buffer para las variables de entorno.
+    char *arguments[64]; // Buffer para los argumentos del ejecutable.
+    int environVarsCount = 0, argumentsCount = 0, EnvIndex = 0;
+    char *executableName = NULL;
+    long int prio = 0;
+
+    char fullcommand[1024] = "";
+
+    // Validar que la prioridad esté en pieces[1] y sea un número válido.
+    if (pieces[0] != NULL) {
+        char *endptr;
+        prio = strtol(pieces[0], &endptr, 10); // Usar strtol para validar el número.
+        if (*endptr != '\0') {
+            fprintf(stderr, "Error: La prioridad '%s' no es un número válido.\n", pieces[0]);
+            return;
+        }
+    }else
+        return;
+
+    // Separar variables de entorno y argumentos.
+    for (int i = 1; pieces[i] != NULL; i++) {
+        strcat(fullcommand, pieces[i]); // Agregar cada parte del comando a fullCommand.
+        strcat(fullcommand, " ");      // Agregar un espacio entre los argumentos.
+
+        EnvIndex = BuscarVariable(pieces[i], env);
+        if (EnvIndex != -1) {
+            // Reconstruir la variable completa: "NOMBRE=valor".
+            environVars[environVarsCount] = strdup(env[EnvIndex]);
+            environVarsCount++;
+        } else {
+            if (argumentsCount == 0) {
+                executableName = pieces[i]; // Primer argumento no es una variable, es el ejecutable.
+            }
+            arguments[argumentsCount++] = pieces[i];
+        }
+    }
+
+    fullcommand[strlen(fullcommand) - 1] = '\0'; // Eliminar el espacio extra al final.
+    environVars[environVarsCount] = NULL; // Terminar lista de entorno.
+
+    // Asegurarse de que arguments[0] contenga el nombre del ejecutable.
+    if (executableName != NULL) {
+        arguments[0] = executableName;
+    } else {
+        fprintf(stderr, "Error: No se especificó un ejecutable.\n");
+        liberarEnvironVars(&environVarsCount, environVars);
+        return;
+    }
+
+    arguments[argumentsCount] = NULL; // Terminar lista de argumentos.
+
+    // Crear proceso hijo.
+    if ((pid = fork()) == 0) {
+        // Proceso hijo: Ejecutar el programa.
+        if (Execpve(arguments, environVarsCount > 0 ? environVars : NULL, &prio, directoryList) == -1) {
+            perror("Error ejecutando programa");
+            liberarEnvironVars(&environVarsCount, environVars);
+            _exit(-1);
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+    }else if (pid > 0) {
+        // Proceso padre: Añadir proceso a la lista.
+        if (!addProcess(processList, pid, fullcommand)) {
+            fprintf(stderr, "Error añadiendo el proceso a la lista.\n");
+        }
+        liberarEnvironVars(&environVarsCount, environVars);
+    } else {
+        liberarEnvironVars(&environVarsCount, environVars);
+        perror("Error creando el proceso");
+    }
+}
+
+void command_listjobs(ProcessList *processList) {
+    if (isEmptyListP(*processList)) {
+        printf("No hay processos en segundo plano\n");
+    }else {
+        listJobs(*processList);
+    }
+}
+
+void command_deljobs(ProcessList *processList) {
+    if (isEmptyListP(*processList)) {
+        printf("No hay processos en segundo plano\n");
+    }else {
+        delJobs(processList);
+    }
+}
+
+void executeExternalCommand(char *pieces[], char *env[], DirectoryList *directoryList) {
+    command_fg(pieces, env, directoryList);
+}
+
+/*QUE COJONES
+ * pablojhd@asus:~/Escritorio/SO/P01$ valgrind --leak-check=full ./p3
+==14368== Memcheck, a memory error detector
+==14368== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==14368== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==14368== Command: ./p3
+==14368==
+Iniciando shell..
+→ back xterm -fg green -bg black -e /usr/local/bin/ksh
+Error ejecutando programa: No such file or directory
+==14370==
+==14370== HEAP SUMMARY:
+==14370==     in use at exit: 21,788 bytes in 53 blocks
+==14370==   total heap usage: 57 allocs, 4 frees, 25,332 bytes allocated
+==14370==
+==14370== LEAK SUMMARY:
+==14370==    definitely lost: 0 bytes in 0 blocks
+==14370==    indirectly lost: 0 bytes in 0 blocks
+==14370==      possibly lost: 0 bytes in 0 blocks
+==14370==    still reachable: 21,788 bytes in 53 blocks
+==14370==         suppressed: 0 bytes in 0 blocks
+==14370== Reachable blocks (those to which a pointer was found) are not shown.
+==14370== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==14370==
+==14370== For lists of detected and suppressed errors, rerun with: -s
+==14370== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+→ listjobs
+ 14370   pablojhd p=-1 2024/12/09 21:21:02 TERMINADO (001) xterm -fg green -bg black -e /usr/local/bin/ksh
+→ search -path
+Importados 10 directorios en la ruta de busqueda
+→ back xterm -fg green -bg black -e /usr/local/bin/ksh
+→ back xterm -fg green -bg black -e /usr/local/bin/ksh
+→ listjobs
+ 14370   pablojhd p=-1 2024/12/09 21:21:02 TERMINADO (001) xterm -fg green -bg black -e /usr/local/bin/ksh
+ 14389   pablojhd p=-1 2024/12/09 21:21:44 TERMINADO (000) xterm -fg green -bg black -e /usr/local/bin/ksh
+ 14391   pablojhd p=-1 2024/12/09 21:21:50 TERMINADO (000) xterm -fg green -bg black -e /usr/local/bin/ksh
+→ exit
+Saliendo de la shell...
+==14368==
+==14368== HEAP SUMMARY:
+==14368==     in use at exit: 0 bytes in 0 blocks
+==14368==   total heap usage: 115 allocs, 115 frees, 60,004 bytes allocated
+==14368==
+==14368== All heap blocks were freed -- no leaks are possible
+==14368==
+==14368== For lists of detected and suppressed errors, rerun with: -s
+==14368== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+
+ */
+
+
+
