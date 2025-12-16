@@ -45,3 +45,11 @@ This project achieved a near-perfect score of **94%** (2.35 / 2.50) based on rig
    ```bash
    git clone [https://github.com/tiago-volta/SO-UDC.git](https://github.com/tiago-volta/SO-UDC.git)
    cd SO-UDC
+
+2. **Compile:**
+```bash
+   make 
+   
+3. **Run the Shell:**
+```bash
+./shell   
